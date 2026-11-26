@@ -18,19 +18,23 @@ App web para proyectar alabanzas, textos bíblicos y anuncios durante el culto. 
 
 ## Funciones
 
-- **Orden del culto:** arma la lista (alabanzas, pasajes, anuncios), reordénala y pulsa **▶ Empezar**. Al terminar un elemento, → pasa solo al siguiente.
-- **Alabanzas:** cada estrofa (separada por una línea en blanco) es una diapositiva; `[Coro]` sirve de etiqueta. Búsqueda por título o letra, autor, e **Importar varias** (pegar con `---` entre alabanzas o archivos `.txt`).
-- **Biblia Reina-Valera 1909** completa: `Juan 3:16`, `Sal 23`, `Ro 8:28-39`, búsqueda por palabra y de 1 a 4 versículos por diapositiva.
-- **Extras:** cuenta regresiva antes del culto, pantalla de logo de la iglesia y texto libre al momento.
-- **Mensaje rápido** en una franja sobre lo que se proyecta (avisos a padres, etc.).
-- **Ajustes:** fondos (incluye imagen propia y verde croma), oscurecer fondo, tamaño y tipo de letra, texto al centro o abajo para transmisión en vivo, mayúsculas, transición suave.
-- **Proyector:** se abre en la segunda pantalla cuando el navegador lo permite; doble clic para pantalla completa. Indicador de conexión y reloj.
-- Atajos: `→`/espacio siguiente, `←` anterior, `1`–`9` ir a diapositiva, `B` negro, `C` ocultar texto, `L` logo, `M` mensaje, `P` proyector.
-- **Respaldo** de todo (incluye ajustes) para pasarlo a otra computadora.
+- **Cultos guardados por fecha:** crea, duplica y reordena cultos (alabanzas, pasajes, sermones, medios, anuncios). Pulsa **▶ Empezar** y con → avanza solo al siguiente elemento.
+- **Control desde el celular:** botón **Celular**, escanea el código QR y controla la proyección desde el teléfono (siguiente, negro, logo, elegir diapositiva o elemento del culto). Necesita internet en ambos.
+- **Pantalla para músicos:** botón **Músicos** abre una ventana con la letra actual en grande, lo que sigue y la hora.
+- **Alabanzas:** cada estrofa (separada por una línea en blanco) es una diapositiva; `[Coro]` sirve de etiqueta. Búsqueda, autor e **Importar varias**.
+- **Biblia:** Reina-Valera 1909, Reina-Valera 1865 y King James (inglés), con modo bilingüe; de 1 a 4 versículos por diapositiva y búsqueda por palabra.
+- **Sermón:** escribe tus puntos; un párrafo que sea solo una cita (ej. `Juan 3:16-18`) se proyecta con el texto bíblico; `#` marca un título.
+- **Medios:** fotos y videos para proyectar (con control de pausa y sonido). Un video puede usarse como fondo en movimiento.
+- **Fondos en movimiento:** luces suaves, aurora y cielo con nubes, además de colores, imagen propia y verde croma.
+- **Extras:** cuenta regresiva, pantalla de logo de la iglesia y texto libre. **Mensaje rápido** en una franja sobre la proyección.
+- **Ajustes:** tamaño y tipo de letra, texto al centro o abajo para transmisión, mayúsculas, oscurecer fondo, transición suave.
+- **Sincronizar entre computadoras:** en **Respaldo**, crea un archivo dentro de OneDrive, Google Drive o Dropbox y úsalo en cada computadora (Edge o Chrome).
+- Atajos: `→`/espacio siguiente, `←` anterior, `1`–`9` ir a diapositiva, `B` negro, `C` ocultar texto, `L` logo, `M` mensaje, `P` proyector, `K` pausar video.
 
 Los datos (alabanzas, anuncios, orden del culto) se guardan en el navegador de la computadora donde se usa. Haz respaldos con el botón **Respaldo**.
 
 ## Archivos
 
 - `index.html` — la app completa.
-- `biblia-rv1909.js` — texto de la Biblia Reina-Valera 1909 (dominio público), tomado de [scrollmapper/bible_databases](https://github.com/scrollmapper/bible_databases).
+- `biblia-rv1909.js`, `biblia-rv1865.js`, `bible-kjv.js` — Biblias de dominio público (Reina-Valera 1909, Reina-Valera 1865, King James), tomadas de [scrollmapper/bible_databases](https://github.com/scrollmapper/bible_databases).
+- `lib/` — [PeerJS](https://peerjs.com) y [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (licencia MIT) para el control desde el celular.
