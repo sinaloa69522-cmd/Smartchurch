@@ -92,7 +92,7 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
 <body>
 <header>
   <h1>Smart<b>Church</b></h1>
-  <button id="btnDl" class="dl" title="Instala SmartChurch en esta computadora">⬇ Descargar app</button>
+  <button id="btnDl" class="dl" title="Instala SmartChurch en esta computadora">⤓ Instalar app</button>
   <span id="dlMsg" style="font-size:13px;color:#c9d2e6"></span>
   <button class="pri" id="btnProj" title="Abre la ventana que va al proyector">Abrir proyector</button>
   <button id="btnBlack" title="Tecla B">Pantalla negra</button>
@@ -143,15 +143,13 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
 </form></dialog>
 
 <dialog id="dlgInstall"><form method="dialog">
-  <h3>Descargar SmartChurch</h3>
-  <p><b>Instalar como app (recomendado):</b> abre la página de SmartChurch en Edge o Chrome y pulsa <b>Instalar</b>. Queda con su ícono en el escritorio y en el menú Inicio, funciona sin internet y se actualiza sola.</p>
-  <div class="row" id="pagesRow"><a href="https://sinaloa69522-cmd.github.io/Smartchurch/" target="_blank" rel="noopener" style="flex:1"><button type="button" class="pri" style="width:100%">Abrir la página para instalar</button></a></div>
-  <p><b>Instalador clásico de Windows:</b> descarga el instalador, ábrelo y sigue los pasos. Te queda el ícono de SmartChurch en el escritorio y en el menú Inicio. Si conectas un proyector, la ventana del proyector se abre sola en esa pantalla.</p>
-  <div class="row"><a id="exeLink" href="https://github.com/sinaloa69522-cmd/Smartchurch/releases/latest/download/SmartChurch-Setup.exe" target="_blank" rel="noopener" style="flex:1"><button type="button" style="width:100%">⬇ Descargar para Windows (.exe)</button></a></div>
-  <p class="hint">Windows puede mostrar “Windows protegió su PC”: pulsa <b>Más información</b> y luego <b>Ejecutar de todas formas</b>. Si tu PC tiene activado el Control inteligente de aplicaciones, el .exe se bloquea: usa la opción de arriba.</p>
-  <div id="pwaRow" hidden><p><b>Instalar desde el navegador:</b> Chrome o Edge la instalan como app en un clic.</p><div class="row"><button type="button" id="bPwa">Instalar desde el navegador</button></div></div>
-  <p><b>Un solo archivo:</b> baja <code>SmartChurch.html</code> con todo incluido. Lo abres con doble clic, sin instalar nada. Ideal para pasarlo en una memoria USB.</p>
-  <div class="row"><button type="button" id="bOneFile">Descargar en un solo archivo</button></div>
+  <h3>Instalar SmartChurch</h3>
+  <div id="instAway"><p>Para instalarla, abre la página oficial de SmartChurch en Edge o Chrome y pulsa <b>Instalar app</b> otra vez.</p>
+  <div class="row"><a href="https://sinaloa69522-cmd.github.io/Smartchurch/" target="_blank" rel="noopener" style="flex:1"><button type="button" class="pri" style="width:100%">Abrir página de SmartChurch</button></a></div></div>
+  <div id="instHere"><p>En <b>Edge</b>: abre el menú <b>…</b> (arriba a la derecha) → <b>Aplicaciones</b> → <b>Instalar SmartChurch</b>.</p>
+  <p>En <b>Chrome</b>: haz clic en el ícono de instalar al final de la barra de direcciones, o menú <b>⋮</b> → <b>Transmitir, guardar y compartir</b> → <b>Instalar página como app</b>.</p>
+  <p class="hint">Si ya está instalada, búscala en tu escritorio o en el menú Inicio.</p></div>
+  <p>La app instalada abre en su propia ventana, funciona sin internet y se actualiza sola.</p>
   <p class="hint" id="instMsg"></p>
   <div class="row"><button value="close">Cerrar</button></div>
 </form></dialog>
@@ -171,7 +169,6 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
 <script src="biblia-rv1909.js"></script>
 <script>
 {
-const PRISTINE='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,'');
@@ -369,27 +366,16 @@ async function saveFile(name,blob){
   if(dl)return dl.save({filename:name,data:blob});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);
 }
-async function buildApp(){
-  let html=null;
-  if(location.protocol!=='file:'){try{const r=await fetch(location.href.split('#')[0],{cache:'no-store'});if(r.ok){const t=await r.text();if(t.includes('id="btnDl"'))html=t}}catch(e){}}
-  if(!html)html=PRISTINE.replace(/<html([^>]*?)\sdata-theme="[^"]*"/,'<html$1');
-  const tag='<script src="biblia-rv1909.js"></'+'script>';
-  if(html.includes(tag)){if(!BIB)throw new Error('sin biblia');html=html.replace(tag,()=>'<script>window.BIBLIA_RV1909='+JSON.stringify(BIB).replace(/</g,'\\u003c')+';</'+'script>')}
-  return html;
-}
-$('#bOneFile').onclick=async()=>{const m=$('#instMsg');m.textContent='Preparando…';
-  try{const blob=new Blob([await buildApp()],{type:'text/html'});const name='SmartChurch.html';
-    await saveFile(name,blob);m.textContent='Descargada ✓';
-  }catch(e){m.textContent=e&&e.code==='declined'?'Descarga cancelada':'No se pudo descargar aquí'}
-  setTimeout(()=>m.textContent='',8000)};
 // ---------- Instalar como app ----------
+const onPages=/github\.io$/.test(location.host);
+const isApp=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true||/Electron/.test(navigator.userAgent);
 let installEvt=null;
-if(/Electron/.test(navigator.userAgent))$('#btnDl').hidden=true;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('#pwaRow').hidden=false});
-window.addEventListener('appinstalled',()=>{installEvt=null;$('#pwaRow').hidden=true;$('#instMsg').textContent='SmartChurch quedó instalada. Búscala en tu escritorio o menú Inicio.'});
-$('#bPwa').onclick=async()=>{if(!installEvt)return;installEvt.prompt();const r=await installEvt.userChoice;installEvt=null;if(r&&r.outcome==='accepted')$('#pwaRow').hidden=true};
-if(/github\.io$/.test(location.host))$('#pagesRow').hidden=true;
-$('#btnDl').onclick=()=>{$('#instMsg').textContent='';$('#dlgInstall').showModal()};
+if(isApp())$('#btnDl').hidden=true;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e});
+window.addEventListener('appinstalled',()=>{installEvt=null;$('#btnDl').hidden=true});
+$('#btnDl').onclick=async()=>{
+  if(installEvt){installEvt.prompt();const r=await installEvt.userChoice;installEvt=null;if(r&&r.outcome==='accepted')$('#btnDl').hidden=true;return}
+  $('#instAway').hidden=onPages;$('#instHere').hidden=!onPages;$('#instMsg').textContent='';$('#dlgInstall').showModal()};
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&!/claude\.ai|claudeusercontent|claude\.site/.test(location.host))navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 drawLib();render();
