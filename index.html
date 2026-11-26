@@ -29,6 +29,7 @@ header button{background:#1d2c4d;border-color:#33456e;color:#f3f5fa}
 header button.pri{background:var(--acc);color:#1a1405}
 header button.on{background:var(--live);border-color:transparent}
 header .sp{flex:1}
+header button.dl{background:#1f7a4d;border-color:#2e9a63;font-weight:700}
 header label{font-size:13px;display:flex;align-items:center;gap:6px;color:#c9d2e6}
 header select,header input[type=range]{width:auto;background:#1d2c4d;border-color:#33456e;color:#f3f5fa;min-height:36px}
 main{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr) minmax(0,420px);gap:12px;padding:12px;height:calc(100% - 62px)}
@@ -87,6 +88,8 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
 <body>
 <header>
   <h1>Smart<b>Church</b></h1>
+  <button id="btnDl" class="dl" title="Descarga la app completa en un solo archivo para usarla sin internet">⬇ Descargar app</button>
+  <span id="dlMsg" style="font-size:13px;color:#c9d2e6"></span>
   <button class="pri" id="btnProj" title="Abre la ventana que va al proyector">Abrir proyector</button>
   <button id="btnBlack" title="Tecla B">Pantalla negra</button>
   <button id="btnClear" title="Tecla C">Ocultar texto</button>
@@ -94,8 +97,6 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
   <label>Fondo <select id="bgSel"></select></label>
   <label>Letra <input type="range" id="size" min="70" max="140" value="100"></label>
   <button id="btnMenu">Respaldo</button>
-  <button id="btnDl" title="Descarga la app completa en un solo archivo para usarla sin internet">Descargar app</button>
-  <span id="dlMsg" style="font-size:13px;color:#c9d2e6"></span>
 </header>
 <main>
   <section class="col" id="colLib">
