@@ -167,7 +167,8 @@ body.remote #remote{display:flex}
   <button id="btnDl" class="dl" title="Instala SmartChurch en esta computadora">⤓ Instalar app</button>
   <div class="grp">
     <button class="pri" id="btnProj" title="Abre la ventana del proyector (P)">Abrir proyector</button>
-    <button id="btnMus" title="Ventana para músicos y cantantes">Músicos</button>
+    <button id="btnMus" title="Ventana para músicos, cantantes y predicador: acordes, siguiente diapositiva y tiempo">Músicos</button>
+    <button id="btnStr" title="Ventana para transmisión en vivo (OBS): letra abajo sobre fondo verde">En vivo</button>
     <button id="btnBlack" title="Tecla B">Negro</button>
     <button id="btnClear" title="Tecla C">Ocultar texto</button>
     <button id="btnLogo" title="Tecla L">Logo</button>
@@ -238,6 +239,16 @@ body.remote #remote{display:flex}
   <div class="row"><button value="cancel" formnovalidate>Cancelar</button><button class="pri" id="fSave" value="ok">Guardar</button></div>
 </form></dialog>
 
+<dialog id="dlgPet"><form method="dialog">
+  <h3>Peticiones de oración y cumpleaños</h3>
+  <p class="hint">Escribe un nombre o petición por línea. Se crean dos anuncios listos para proyectar, con 5 nombres por diapositiva.</p>
+  <div class="grid2">
+    <label class="field"><span>Peticiones de oración</span><textarea id="pPet" style="min-height:180px" placeholder="Hna. María (salud)&#10;Familia López&#10;Hno. Juan (trabajo)"></textarea></label>
+    <label class="field"><span>Cumpleaños de la semana</span><textarea id="pCum" style="min-height:180px" placeholder="Ana García · martes&#10;Pedro Ruiz · sábado"></textarea></label>
+  </div>
+  <div class="row"><button value="ok" class="pri">Guardar y proyectar</button><button value="close">Cancelar</button></div>
+</form></dialog>
+
 <dialog id="dlgBulk"><form method="dialog" id="fBulk">
   <h3>Importar varias alabanzas</h3>
   <p class="hint">Pega todas las letras. Separa cada alabanza con una línea que tenga solo <b>---</b>. La primera línea de cada una es el título.</p>
@@ -260,6 +271,10 @@ body.remote #remote{display:flex}
     <label class="field"><span>Versículos por diapositiva</span><select id="sVpp"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
     <label class="field"><span>Versión de la Biblia</span><select id="sBver"><option value="rv1909">Reina-Valera 1909</option><option value="rv1865">Reina-Valera 1865</option><option value="kjv">King James (inglés)</option></select></label>
     <label class="field"><span>Segunda versión debajo (bilingüe)</span><select id="sBver2"><option value="">Ninguna</option><option value="rv1909">Reina-Valera 1909</option><option value="rv1865">Reina-Valera 1865</option><option value="kjv">King James (inglés)</option></select></label>
+  </div>
+  <div class="grid2">
+    <label class="field"><span>Tiempo del sermón en minutos (ventana de músicos y predicador; 0 = sin límite)</span><input type="number" id="sSermMin" min="0" max="240" step="5"></label>
+    <label class="field"><span>Fondo de la ventana En vivo (OBS)</span><select id="sStrBg"><option value="#00b140">Verde (croma)</option><option value="#0047bb">Azul (croma)</option><option value="#000000">Negro</option></select></label>
   </div>
   <label class="chk"><input type="checkbox" id="sUpper"> Letras de alabanzas en MAYÚSCULAS</label>
   <label class="chk"><input type="checkbox" id="sTitle"> Mostrar el título de la alabanza en la primera diapositiva</label>
@@ -305,6 +320,9 @@ body.remote #remote{display:flex}
   <div class="row" id="syncRow"><button type="button" id="syncNew" class="pri">Crear archivo de sincronización</button><button type="button" id="syncOpen">Usar un archivo existente</button></div>
   <p class="hint" id="syncState"></p>
   <div class="row" id="syncRow2" hidden><button type="button" id="syncNow">Sincronizar ahora</button><button type="button" id="syncOff">Desconectar archivo</button></div>
+  <h4>Copias automáticas</h4>
+  <p class="hint">SmartChurch guarda sola una copia diaria en esta computadora (últimos 7 días). Si borraste algo por error, restaura una.</p>
+  <div class="row" id="autoList"></div>
   <h4>Respaldo manual</h4>
   <div class="row"><button type="button" id="bExport">Descargar respaldo (.json)</button><button type="button" id="bCopy">Copiar respaldo</button></div>
   <label class="hint">Restaurar un respaldo (.json): <input type="file" id="iImport" accept=".json,application/json"></label>
@@ -359,6 +377,14 @@ const dbGet=(s,k)=>dbOp(s,'readonly',st=>st.get(k));
 const dbPut=(s,k,v)=>dbOp(s,'readwrite',st=>st.put(v,k));
 const dbDel=(s,k)=>dbOp(s,'readwrite',st=>st.delete(k));
 
+// ---------- Copias automáticas (últimos 7 días, en esta computadora) ----------
+let autoTimer=null;
+async function autoSnap(){try{await dbPut('kv','auto-'+today(),backup());const ks=(await dbOp('kv','readonly',st=>st.getAllKeys())).filter(k=>typeof k==='string'&&k.startsWith('auto-')).sort();for(const k of ks.slice(0,-7))await dbDel('kv',k)}catch(e){}}
+async function drawAuto(){const box=$('#autoList');if(!box)return;let ks=[];try{ks=(await dbOp('kv','readonly',st=>st.getAllKeys())).filter(k=>typeof k==='string'&&k.startsWith('auto-')).sort().reverse()}catch(e){}
+  box.innerHTML=ks.length?ks.map(k=>{const dt=new Date(k.slice(5)+'T12:00');return `<button type="button" data-auto="${esc(k)}">${esc(dt.toLocaleDateString('es',{weekday:'short',day:'numeric',month:'short'}))}</button>`}).join(''):'<span class="hint">Todavía no hay copias.</span>';
+  box.onclick=async e=>{const k=e.target.dataset.auto;if(!k)return;const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='¿Restaurar? Clic otra vez';return}
+    try{const d=JSON.parse(await dbGet('kv',k));applyData(d);persist();drawLib();render();$('#menuMsg').textContent='Restaurada la copia del '+k.slice(5)+`: ${songs.length} alabanzas, ${serms.length} predicaciones.`}catch(er){$('#menuMsg').textContent='No se pudo restaurar esa copia.'}}}
+
 // ---------- Datos ----------
 const SAMPLE=[
  {id:'s1',title:'Santo, Santo, Santo',text:'[Estrofa 1]\n¡Santo! ¡Santo! ¡Santo! Señor omnipotente,\nsiempre el labio mío loores te dará;\n\n¡Santo! ¡Santo! ¡Santo! te adoro reverente,\nDios en tres personas, bendita Trinidad.\n\n[Estrofa 2]\n¡Santo! ¡Santo! ¡Santo! La inmensa muchedumbre\nde ángeles que cumplen tu santa voluntad,\n\nante ti se postra bañada de tu lumbre,\nante ti que has sido, que eres y serás.\n\n[Estrofa 3]\n¡Santo! ¡Santo! ¡Santo! Por más que estés velado\ne imposible sea tu gloria contemplar,\n\nsanto tú eres solo, y nada hay a tu lado\nen poder perfecto, pureza y caridad.'},
@@ -374,14 +400,14 @@ if(!plans){plans=[{id:uid(),name:'Culto de hoy',date:today(),items:load('sc_plan
 let planId=load('sc_planId',plans[0].id);if(!plans.find(p=>p.id===planId))planId=plans[0].id;
 const planObj=()=>plans.find(p=>p.id===planId)||plans[0];
 let plan=planObj().items;
-const DEF={bg:'noche',size:100,custom:'',dim:0,font:'sans',pos:'mid',align:'c',vpp:1,upper:false,showTitle:true,fade:true,auto:true,name:'',sub:'Bienvenidos a la casa de Dios',logo:'',bver:'rv1909',bver2:'',bgVideo:'',remoteId:''};
+const DEF={bg:'noche',size:100,custom:'',dim:0,font:'sans',pos:'mid',align:'c',vpp:1,upper:false,showTitle:true,fade:true,auto:true,name:'',sub:'Bienvenidos a la casa de Dios',logo:'',bver:'rv1909',bver2:'',bgVideo:'',remoteId:'',sermMin:0,strBg:'#00b140'};
 let set=Object.assign({},DEF,load('sc_set',{}));
 let setVer=0,syncTimer=null;
 const snapshot=()=>({app:'SmartChurch',v:3,saved:Date.now(),songs,anns,serms,plans,planId,yt:mediaList.filter(m=>m.type==='yt'),set:Object.assign({},set,{remoteId:''})});
 function persist(local){
   save('sc_songs',songs);save('sc_ann',anns);save('sc_serm',serms);save('sc_plans',plans);save('sc_planId',planId);save('sc_media',mediaList);
   if(!save('sc_set',set))toast('La imagen es muy grande para guardarse; usa una más pequeña.');
-  if(!local){save('sc_savedAt',Date.now());clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,1500)}
+  if(!local){save('sc_savedAt',Date.now());clearTimeout(autoTimer);autoTimer=setTimeout(autoSnap,4000);clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,1500)}
 }
 
 const BGS={noche:'radial-gradient(circle at 30% 20%,#23407a,#0a1430 60%,#050914)',luces:'@a-luces',aurora:'@a-aurora',cielo:'@a-cielo',negro:'#000',vino:'radial-gradient(circle at 70% 30%,#6b1f3a,#2a0a17 65%,#12040a)',bosque:'radial-gradient(circle at 30% 30%,#1f5c4a,#0b2a22 65%,#04120e)',amanecer:'linear-gradient(160deg,#f3a04a,#b44a5a 45%,#2b1c4a)',azul:'linear-gradient(180deg,#0f4c81,#082a4a)',morado:'radial-gradient(circle at 50% 30%,#4b2a7a,#1c0f33 65%,#0b0616)',gris:'linear-gradient(180deg,#3a3f48,#15181d)',verde:'#00b140',propio:'',video:''};
@@ -720,7 +746,11 @@ async function mediaSrc(id){if(mediaURL[id])return mediaURL[id];try{const blob=a
 async function warmMedia(){for(const m of mediaList)await mediaSrc(m.id);if(set.bgVideo)await mediaSrc(set.bgVideo)}
 
 // ---------- Diapositivas ----------
-function songSlides(text){return text.replace(/\r/g,'').split(/\n\s*\n/).map(b=>{let lb='';const lines=b.split('\n').filter(l=>{const m=l.trim().match(/^\[(.+)\]$/);if(m){lb=m[1];return false}return true});return{label:lb,text:lines.join('\n').trim()}}).filter(s=>s.text)}
+const CHORD=/^[A-G](#|b)?(m|maj|min|sus|dim|aug|add|M|°|\+)?\d*((sus|add|maj|m|b|#)\d+)*(\/[A-G](#|b)?)?$/;
+const isChordTok=t=>CHORD.test(t.replace(/^\[|\]$/g,''));
+const isChordLine=l=>{const t=l.trim().split(/\s+/).filter(x=>x&&x!=='|'&&x!=='-');return t.length>0&&t.every(isChordTok)};
+const stripChords=l=>l.replace(/\[([^\]\s]+)\]/g,(m,c)=>CHORD.test(c)?'':m).replace(/  +/g,' ');
+function songSlides(text){return text.replace(/\r/g,'').split(/\n\s*\n/).map(b=>{let lb='',ch=false;const raw=[];const lines=[];for(const l of b.split('\n')){if(isChordLine(l)){raw.push(l);ch=true;continue}const m=l.trim().match(/^\[(.+)\]$/);if(m){lb=m[1];continue}const st=stripChords(l);if(st!==l)ch=true;raw.push(l);lines.push(st.trim()?st:l.trim()?'':st)}const tx=lines.join('\n').trim();return{label:lb,text:tx,ch:ch?raw.join('\n').trim():'',_any:tx||ch}}).filter(s=>s._any).map(({_any,...s})=>s.text?s:{...s,text:' '})}
 function bibleSlides(b,c,v1,v2){
   const ch=BIB[b][c-1];v1=v1||1;v2=Math.min(v2||ch.length,ch.length);const n=+set.vpp||1;const out=[];const main=bibleData(set.bver)?set.bver:'rv1909';const sec=set.bver2&&set.bver2!==main&&bibleData(set.bver2)?set.bver2:'';
   for(let v=v1;v<=v2;v+=n){const e=Math.min(v+n-1,v2);const vs=[];for(let k=v;k<=e;k++)vs.push(k);
@@ -731,7 +761,8 @@ function bibleSlides(b,c,v1,v2){
   return out;
 }
 let cur=null,curPlan=-1;
-let liveIdx=-1,black=false,hidden=false,live=null,msgOn=false;
+let liveIdx=-1,black=false,hidden=false,live=null,msgOn=false,curStart=Date.now(),str=null;
+let trans=load('sc_trans',{}),musChords=load('sc_musCh',true);
 
 function fromSource(src){
   if(!src)return null;
@@ -848,16 +879,51 @@ const MUS_CSS=`html,body{margin:0;height:100%;background:#000;color:#fff;font-fa
 #mclock{font-size:6vh;font-weight:700;color:#ffd77a;font-variant-numeric:tabular-nums}
 #mnow{font-size:7vh;font-weight:700;line-height:1.2;white-space:pre-line;overflow:hidden;border-left:.6vw solid #d23a2f;padding-left:2vw}
 #mnext{font-size:4vh;color:#ffd77a;white-space:pre-line;line-height:1.25;max-height:28vh;overflow:hidden;border-top:2px solid #333;padding-top:1.5vh}
+#mtime{font-size:3.4vh;color:#cfe;font-variant-numeric:tabular-nums}#mtime.over{color:#ff6b5e;font-weight:700}
+#mbar{display:flex;gap:.6vw;align-items:center;font-size:2.2vh}#mbar button{font:inherit;background:#222;color:#fff;border:1px solid #555;border-radius:6px;padding:.3vh .8vw;cursor:pointer}#mbar button.on{background:#ffd77a;color:#000}
+.cl{display:block;white-space:pre}.cs{display:inline-flex;flex-direction:column;vertical-align:bottom;white-space:pre}.cs i{font-style:normal;color:#ffd77a;font-size:.62em;font-weight:700;min-height:1.15em;line-height:1.15}.co{color:#ffd77a;font-size:.7em;white-space:pre;display:block}
 #mmsg{position:fixed;left:0;right:0;top:0;background:#c8372d;font-size:3.5vh;font-weight:700;text-align:center;padding:1vh;display:none}
 .blk{color:#d23a2f}`;
 function openMus(){
   if(musAlive()){mus.focus();return}
   let w=null;try{w=window.open('','smartchurch_musicos','width=1100,height=700')}catch(e){}
   if(!w){toast('Tu navegador no permitió abrir otra ventana. Permite las ventanas emergentes para este sitio.');return}
-  const d=w.document;d.open();d.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Músicos · SmartChurch</title><style>${MUS_CSS}</style></head><body><div id="mmsg"></div><div id="mw"><div id="mtop"><span id="mtitle"></span><span id="mclock"></span></div><div id="mnow"></div><div id="mnext"></div></div></body></html>`);d.close();
+  const d=w.document;d.open();d.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Músicos · SmartChurch</title><style>${MUS_CSS}</style></head><body><div id="mmsg"></div><div id="mw"><div id="mtop"><span id="mtitle"></span><span id="mtime"></span><span id="mbar"><button id="bCh">Acordes</button><button id="bTd" title="Bajar medio tono">−½</button><span id="mTr"></span><button id="bTu" title="Subir medio tono">+½</button></span><span id="mclock"></span></div><div id="mnow"></div><div id="mnext"></div></div></body></html>`);d.close();
   d.addEventListener('dblclick',()=>{d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen().catch(()=>{})});
   d.addEventListener('keydown',onKey);
+  d.getElementById('bCh').onclick=()=>{musChords=!musChords;save('sc_musCh',musChords);paintMus()};
+  const tr=n=>{if(!cur||!cur.src||cur.src.t!=='song')return;const k=cur.src.id;trans[k]=(((trans[k]||0)+n)%12+12)%12;if(trans[k]>6)trans[k]-=12;save('sc_trans',trans);paintMus()};
+  d.getElementById('bTd').onclick=()=>tr(-1);d.getElementById('bTu').onclick=()=>tr(1);
   mus=w;render();toast('Ventana de músicos abierta');
+}
+const NOTES=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'],FLAT={Db:'C#','D#':'Eb',Gb:'F#','G#':'Ab','A#':'Bb',Cb:'B',Fb:'E','E#':'F','B#':'C'};
+function trChord(c,n){if(!n)return c;return c.replace(/[A-G](#|b)?/g,r=>{const i=NOTES.indexOf(FLAT[r]||r);return i<0?r:NOTES[(i+n+12)%12]})}
+function chordHTML(raw,n){return raw.split('\n').map(l=>{
+  if(isChordLine(l))return `<span class="co">${esc(l.replace(/\[|\]/g,' ').replace(/\S+/g,t=>trChord(t,n)))}</span>`;
+  const parts=l.split(/\[([^\]\s]+)\]/);if(parts.length<2)return `<span class="cl">${esc(l)||' '}</span>`;
+  let h=`<span class="cl">`+(parts[0]?`<span class="cs"><i></i>${esc(parts[0])}</span>`:'');
+  for(let i=1;i<parts.length;i+=2){const c=parts[i],t=parts[i+1]||'';if(!CHORD.test(c)){h+=`<span class="cs"><i></i>${esc('['+c+']'+t)}</span>`;continue}h+=`<span class="cs"><i>${esc(trChord(c,n))}&nbsp;</i>${esc(t)||'&nbsp;'}</span>`}
+  return h+'</span>'}).join('')}
+const STR_CSS=`html,body{margin:0;height:100%;overflow:hidden;font-family:"Segoe UI",system-ui,sans-serif}
+#sb{position:fixed;left:5vw;right:5vw;bottom:6vh;max-height:36vh;background:#0b1226;border-left:.8vh solid #ffd77a;border-radius:1.2vh;padding:2vh 3vw;color:#fff;text-align:center;box-sizing:border-box;transition:opacity .25s}
+#sb.off{opacity:0}#st{white-space:pre-line;font-weight:600;line-height:1.25;text-shadow:0 .2vh .4vh #000}#sr{color:#ffd77a;font-weight:700;margin-top:.8vh;font-size:3.4vh}
+#tip{position:fixed;top:2vh;left:0;right:0;text-align:center;color:#fff;font-size:2.2vh;text-shadow:0 0 4px #000;transition:opacity 1s}`;
+function strAlive(){try{return str&&!str.closed&&str.document&&str.document.getElementById('sb')}catch(e){return false}}
+function openStr(){
+  if(strAlive()){str.focus();return}
+  let w=null;try{w=window.open('','smartchurch_envivo','width=1280,height=720')}catch(e){}
+  if(!w){toast('Tu navegador no permitió abrir otra ventana. Permite las ventanas emergentes para este sitio.');return}
+  const d=w.document;d.open();d.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>En vivo · SmartChurch</title><style>${STR_CSS}</style></head><body><div id="tip">En OBS: agrega “Captura de ventana” → esta ventana, y aplica el filtro “Croma” (Chroma Key)</div><div id="sb" class="off"><div id="st"></div><div id="sr"></div></div></body></html>`);d.close();
+  d.addEventListener('keydown',onKey);setTimeout(()=>{const t=d.getElementById('tip');if(t)t.style.opacity=0},9000);
+  w.addEventListener('resize',paintStr);
+  str=w;render();toast('Ventana En vivo abierta');
+}
+function paintStr(){
+  if(!strAlive())return;const d=str.document;d.body.style.background=set.strBg||'#00b140';
+  const sl=live,ok=sl&&!black&&!hidden&&sl.text&&sl.text.trim()&&!['logo','count','media'].includes(sl.kind);
+  const sb=d.getElementById('sb'),t=d.getElementById('st');sb.classList.toggle('off',!ok);if(!ok)return;
+  t.textContent=set.upper&&cur&&cur.kind==='song'?sl.text.toUpperCase():sl.text;d.getElementById('sr').textContent=sl.ref||'';
+  let z=5.6;t.style.fontSize=z+'vh';let n=0;while(sb.scrollHeight>sb.clientHeight+2&&z>2.2&&n++<50){z-=.2;t.style.fontSize=z+'vh'}
 }
 function paintMus(){
   if(!musAlive())return;const d=mus.document;
@@ -865,8 +931,13 @@ function paintMus(){
   d.getElementById('mclock').textContent=new Date().toLocaleTimeString('es',{hour:'numeric',minute:'2-digit'});
   d.getElementById('mtitle').textContent=(cur?cur.title+(liveIdx>=0?` · ${liveIdx+1}/${cur.slides.length}`:''):'')+(black?'  ■ PANTALLA NEGRA':'');
   const now=d.getElementById('mnow');
+  const tm=d.getElementById('mtime');const el=Date.now()-curStart;
+  if(cur&&cur.kind==='serm'&&set.sermMin>0){const left=set.sermMin*60000-el;tm.textContent=left>=0?'Sermón: quedan '+fmtTime(left):'Sermón: +'+fmtTime(-left)+' de más';tm.className=left<60000?'over':''}else{tm.textContent=cur?'⏱ '+fmtTime(el):'';tm.className=''}
+  const isSong=cur&&cur.src&&cur.src.t==='song',tp=isSong?(trans[cur.src.id]||0):0;
+  d.getElementById('mbar').style.visibility=isSong?'visible':'hidden';d.getElementById('bCh').classList.toggle('on',musChords);d.getElementById('mTr').textContent=tp?(tp>0?'+':'')+tp:'Tono original';
+  if(sl&&sl.ch&&musChords&&!black){now.innerHTML=(sl.label?'<span class="cl" style="color:#9fb0d0">['+esc(sl.label)+']</span>':'')+chordHTML(sl.ch,tp)}else
   now.textContent=!sl?'':sl.kind==='logo'?'(Logo en pantalla)':sl.kind==='count'?'Cuenta regresiva: '+fmtTime(sl.end-Date.now()):sl.kind==='media'?'(Medio: '+sl.text+')':((sl.label?'['+sl.label+']\n':'')+(sl.title?sl.title+'\n':'')+sl.text+(sl.ref?'\n— '+sl.ref:''));
-  let s=7;now.style.fontSize=s+'vh';let n=0;while(now.scrollHeight>now.clientHeight+2&&s>2.5&&n++<40){s-=.25;now.style.fontSize=s+'vh'}
+  let s=7;now.style.fontSize=s+'vh';now.style.whiteSpace=now.querySelector('.cl,.co')?'normal':'pre-line';let n=0;while(now.scrollHeight>now.clientHeight+2&&s>2.5&&n++<40){s-=.25;now.style.fontSize=s+'vh'}
   d.getElementById('mnext').textContent=nx.sl?('Sigue: '+(nx.sl.label?'['+nx.sl.label+'] ':'')+(nx.sl.text||nx.info)):(nx.info||'');
   const m=msgOn&&$('#msgTxt').value.trim();const mm=d.getElementById('mmsg');mm.style.display=m?'block':'none';mm.textContent=m||'';
 }
@@ -882,9 +953,9 @@ function render(){
   const nx=nextSlide();paint($('#monNext'),nx.sl,keyOf(nx.sl),{noAnim:true,noBlack:true});$('#nextInfo').textContent=nx.info;
   if(pa)paint(proj.document.getElementById('pst'),live,k,{main:true});
   if(ov)paint($('#ovStage'),live,k,{main:!pa});
-  paintMus();
+  paintMus();paintStr();
   $('#projState').innerHTML=`<span class="dot${pa?' on':''}"></span>${pa?'Proyector conectado':'Proyector cerrado'}`;
-  $('#btnBlack').classList.toggle('on',black);$('#btnClear').classList.toggle('on',hidden);$('#btnLogo').classList.toggle('on',!!live&&live.kind==='logo');$('#btnMus').classList.toggle('on',!!musAlive());
+  $('#btnBlack').classList.toggle('on',black);$('#btnClear').classList.toggle('on',hidden);$('#btnLogo').classList.toggle('on',!!live&&live.kind==='logo');$('#btnMus').classList.toggle('on',!!musAlive());$('#btnStr').classList.toggle('on',!!strAlive());
   $('#btnMsg').classList.toggle('on',msgOn);$('#btnMsg').textContent=msgOn?'Quitar':'Mostrar';
   $('#vctrl').hidden=!(live&&live.kind==='media'&&(live.mtype==='video'||live.mtype==='yt'));
   document.querySelectorAll('#slides .slide').forEach((s,i)=>s.classList.toggle('live',i===liveIdx&&live===cur?.slides[i]));
@@ -909,6 +980,7 @@ function slideCard(s,i){
   return `<div class="slide" tabindex="0" data-i="${i}"><span class="n">${i+1}</span>${s.label?`<span class="lb">${esc(s.label)}</span>`:''}${s.title?`<b>${esc(s.title)}</b>\n`:''}${s.html?s.html.replace(/<sup>/g,'<b>').replace(/<\/sup>/g,'</b> ').replace(/<span class="v2">/,'\n<i>').replace(/<\/span>$/,'</i>'):esc(s.text)}${s.ref&&cur&&cur.kind==='serm'?`\n<small>${esc(s.ref)}</small>`:''}</div>`;
 }
 function show(item,startAt,planIdx){
+  if(!cur||!item.src||!cur.src||cur.src.t!==item.src.t||cur.src.id!==item.src.id)curStart=Date.now();
   cur=item;liveIdx=-1;curPlan=planIdx??-1;$('#curTitle').textContent=item.title;
   $('#curBtns').innerHTML=item.src&&planIdx==null?`<button id="addPlan">+ Al culto</button>`:'';
   const ap=$('#addPlan');if(ap)ap.onclick=()=>{plan.push(item.src);persist();ap.textContent='Agregado ✓';ap.disabled=true;toast('Agregado a: '+planObj().name);if(tab==='plan')drawLib()};
@@ -949,11 +1021,12 @@ function drawLib(){
     const T={songs:['song',songs,'alabanza','alabanzas','por título o letra'],ann:['ann',anns,'diapositiva de anuncio','anuncios','anuncio'],serm:['serm',serms,'predicación','predicaciones','predicación']}[tab];
     const [t,arr,one,many,ph]=T;const q=norm(songQ);
     const list=arr.filter(s=>!q||norm(s.title+' '+s.text+' '+(s.author||'')).includes(q)).sort((a,b)=>a.title.localeCompare(b.title,'es'));
-    L.innerHTML=`<div class="row"><input id="q" type="search" placeholder="Buscar ${ph}" value="${esc(songQ)}"></div><div class="row"><button class="pri" id="newBtn">+ Nueva ${one}</button>${tab==='songs'?'<button id="bulkBtn">Importar varias</button>':''}</div>${tab==='serm'?'<p class="hint">Escribe tus puntos. Un párrafo que sea solo una cita (ej. <b>Juan 3:16-18</b>) se proyecta con el texto bíblico. Una línea que empieza con # es un título.</p>':''}<p class="hint">${arr.length} ${many}${q?` · ${list.length} encontradas`:''}</p>`+(tab==='songs'?(()=>{const sg=SONG_SUG.filter(x=>!songs.some(y=>y.title===x[1]));const grp=c=>{const a=sg.filter(x=>x[0]===c);return a.length?`<h4 style="margin:8px 0 2px">${c}</h4>`+a.map(([,t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${esc(tx.split('\n').find(l=>l&&l[0]!=='[')||'')}</small></span><button class="x" data-asug="${esc(t)}">+ Agregar</button></div>`).join(''):''};const cs=CORO_SUG.map(([c,ts])=>[c,ts.filter(t=>!songs.some(y=>y.title===t))]).filter(([,ts])=>ts.length);return (sg.length?`<details${songs.length<5?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Himnos de adoración y júbilo (${sg.length})</summary><p class="hint">Himnos clásicos con la letra completa.</p>${grp('Adoración')}${grp('Júbilo')}<div class="row" style="margin-top:6px"><button id="asugAll">Agregar todos</button></div></details>`:'')+(cs.length?`<details><summary style="cursor:pointer;font-weight:600;margin:6px 0">Coros pentecostales</summary><p class="hint">Estos coros tienen derechos de autor, así que la app no trae la letra. Toca uno, pega o escribe la letra y guárdalo.</p>${cs.map(([c,ts])=>`<h4 style="margin:8px 0 2px">${c}</h4>`+ts.map(t=>`<div class="item"><span class="t">${esc(t)}</span><button class="x" data-coro="${esc(t)}">Escribir letra</button></div>`).join('')).join('')}</details>`:'')+((sg.length||cs.length)?'<h4>Mis alabanzas</h4>':'')})():'')+(tab==='serm'?(()=>{const sg=SERM_SUG.filter(([t])=>!serms.some(x=>x.title===t));return sg.length?`<details${serms.length<3?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Bosquejos sugeridos (${sg.length})</summary>${sg.map(([t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${(tx.match(/^[^#\n].{0,38}\d+:\d+(-\d+)?$/gm)||[]).slice(0,3).map(esc).join(' · ')}</small></span><button class="x" data-ssug="${esc(t)}">+ Agregar</button></div>`).join('')}<div class="row" style="margin-top:6px"><button id="ssugAll">Agregar todos</button></div></details><h4>Mis predicaciones</h4>`:''})():'')+(list.length?list.map(s=>`<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="t">${esc(s.title)}${s.author?`<br><small>${esc(s.author)}</small>`:''}</span><button class="x" data-add="${esc(s.id)}" title="Agregar al culto">+ Culto</button><button class="x" data-ed="${esc(s.id)}">Editar</button></div>`).join(''):`<div class="empty">No hay resultados.</div>`);
+    L.innerHTML=`<div class="row"><input id="q" type="search" placeholder="Buscar ${ph}" value="${esc(songQ)}"></div><div class="row"><button class="pri" id="newBtn">+ Nueva ${one}</button>${tab==='songs'?'<button id="bulkBtn">Importar varias</button>':''}${tab==='ann'?'<button id="petBtn">Peticiones y cumpleaños</button>':''}</div>${tab==='serm'?'<p class="hint">Escribe tus puntos. Un párrafo que sea solo una cita (ej. <b>Juan 3:16-18</b>) se proyecta con el texto bíblico. Una línea que empieza con # es un título.</p>':''}<p class="hint">${arr.length} ${many}${q?` · ${list.length} encontradas`:''}</p>`+(tab==='songs'?(()=>{const sg=SONG_SUG.filter(x=>!songs.some(y=>y.title===x[1]));const grp=c=>{const a=sg.filter(x=>x[0]===c);return a.length?`<h4 style="margin:8px 0 2px">${c}</h4>`+a.map(([,t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${esc(tx.split('\n').find(l=>l&&l[0]!=='[')||'')}</small></span><button class="x" data-asug="${esc(t)}">+ Agregar</button></div>`).join(''):''};const cs=CORO_SUG.map(([c,ts])=>[c,ts.filter(t=>!songs.some(y=>y.title===t))]).filter(([,ts])=>ts.length);return (sg.length?`<details${songs.length<5?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Himnos de adoración y júbilo (${sg.length})</summary><p class="hint">Himnos clásicos con la letra completa.</p>${grp('Adoración')}${grp('Júbilo')}<div class="row" style="margin-top:6px"><button id="asugAll">Agregar todos</button></div></details>`:'')+(cs.length?`<details><summary style="cursor:pointer;font-weight:600;margin:6px 0">Coros pentecostales</summary><p class="hint">Estos coros tienen derechos de autor, así que la app no trae la letra. Toca uno, pega o escribe la letra y guárdalo.</p>${cs.map(([c,ts])=>`<h4 style="margin:8px 0 2px">${c}</h4>`+ts.map(t=>`<div class="item"><span class="t">${esc(t)}</span><button class="x" data-coro="${esc(t)}">Escribir letra</button></div>`).join('')).join('')}</details>`:'')+((sg.length||cs.length)?'<h4>Mis alabanzas</h4>':'')})():'')+(tab==='serm'?(()=>{const sg=SERM_SUG.filter(([t])=>!serms.some(x=>x.title===t));return sg.length?`<details${serms.length<3?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Bosquejos sugeridos (${sg.length})</summary>${sg.map(([t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${(tx.match(/^[^#\n].{0,38}\d+:\d+(-\d+)?$/gm)||[]).slice(0,3).map(esc).join(' · ')}</small></span><button class="x" data-ssug="${esc(t)}">+ Agregar</button></div>`).join('')}<div class="row" style="margin-top:6px"><button id="ssugAll">Agregar todos</button></div></details><h4>Mis predicaciones</h4>`:''})():'')+(list.length?list.map(s=>`<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="t">${esc(s.title)}${s.author?`<br><small>${esc(s.author)}</small>`:''}</span><button class="x" data-add="${esc(s.id)}" title="Agregar al culto">+ Culto</button><button class="x" data-ed="${esc(s.id)}">Editar</button></div>`).join(''):`<div class="empty">No hay resultados.</div>`);
     const qi=$('#q');qi.oninput=()=>{songQ=qi.value;const p=qi.selectionStart;drawLib();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
     $('#newBtn').onclick=()=>edit(tab,null);
     const ssa=$('#ssugAll');if(ssa)ssa.onclick=()=>{let n=0;for(const[t,tx]of SERM_SUG)if(!serms.some(x=>x.title===t)){serms.push({id:uid(),title:t,text:tx});n++}persist();drawLib();toast(n+' bosquejos agregados')};
     const asa=$('#asugAll');if(asa)asa.onclick=()=>{let n=0;for(const[,t,tx]of SONG_SUG)if(!songs.some(x=>x.title===t)){songs.push({id:uid(),title:t,text:tx});n++}persist();drawLib();toast(n+' himnos agregados')};
+    if(tab==='ann')$('#petBtn').onclick=()=>{const pc=load('sc_pc',{pet:'',cum:''});$('#pPet').value=pc.pet;$('#pCum').value=pc.cum;$('#dlgPet').showModal();$('#pPet').focus()};
     if(tab==='songs')$('#bulkBtn').onclick=()=>{$('#bulkMsg').textContent='';$('#dlgBulk').showModal()};
     L.onclick=e=>{const d=e.target.dataset;
       if(d.ed){edit(tab,d.ed);return}
@@ -1027,7 +1100,7 @@ function showLogo(on){if(on===undefined)on=!(live&&live.kind==='logo');if(on){go
 // ---------- Editor ----------
 let editing=null;
 const EDK={songs:[()=>songs,'alabanza','Escribe o pega la letra aquí.'],ann:[()=>anns,'diapositiva de anuncio','Escribe el anuncio.'],serm:[()=>serms,'predicación','# Título del sermón\nSubtítulo\n\nJuan 3:16\n\n# Primer punto\nExplicación...']};
-function countSlides(){const n=editing&&editing.kind==='serm'?(fromSource({t:'serm',id:'__tmp'})||{slides:[]}).slides.length:songSlides($('#fText').value).length;$('#fCount').textContent=`${n} diapositiva${n===1?'':'s'}. Deja una línea en blanco entre diapositivas.`+(editing&&editing.kind==='serm'?' Un párrafo que sea solo una cita bíblica se proyecta con el texto.':' Una línea como [Coro] es una etiqueta y no se proyecta.')}
+function countSlides(){const n=editing&&editing.kind==='serm'?(fromSource({t:'serm',id:'__tmp'})||{slides:[]}).slides.length:songSlides($('#fText').value).length;$('#fCount').textContent=`${n} diapositiva${n===1?'':'s'}. Deja una línea en blanco entre diapositivas.`+(editing&&editing.kind==='serm'?' Un párrafo que sea solo una cita bíblica se proyecta con el texto.':' Una línea como [Coro] es una etiqueta y no se proyecta. Los acordes como [G] o [Am] dentro de la letra solo se ven en la ventana de músicos.')}
 $('#fText').addEventListener('input',()=>{if(editing&&editing.kind==='serm'){const tmp=serms.find(s=>s.id==='__tmp');if(tmp)tmp.text=$('#fText').value}countSlides()});
 function edit(kind,id){const [arrF,one,ph]=EDK[kind];const arr=arrF();const s=id?arr.find(x=>x.id===id):null;editing={kind,id};
   serms=serms.filter(x=>x.id!=='__tmp');if(kind==='serm')serms.push({id:'__tmp',title:'',text:s?s.text:''});
@@ -1041,6 +1114,16 @@ $('#fEdit').addEventListener('submit',e=>{if(e.submitter&&e.submitter.value!=='o
   const text=$('#fText').value,author=$('#fAuthor').value.trim();let s=editing.id&&arr.find(x=>x.id===editing.id);if(s){s.title=t;s.text=text;if(editing.kind==='songs')s.author=author}else{s={id:uid(),title:t,text};if(editing.kind==='songs')s.author=author;arr.push(s)}persist();drawLib();toast('Guardado');
   if(cur&&cur.src&&cur.src.id===s.id)reshow()});
 
+// ---------- Peticiones y cumpleaños ----------
+function petAnn(id,title,head,raw,end){const names=raw.split('\n').map(x=>x.trim()).filter(Boolean);let i=anns.findIndex(a=>a.id===id);
+  if(!names.length){if(i>=0)anns.splice(i,1);return null}
+  const ch=[];for(let k=0;k<names.length;k+=5)ch.push(head+'\n'+names.slice(k,k+5).join('\n'));if(end)ch.push(end);
+  const a={id,title,text:ch.join('\n\n')};if(i>=0)anns[i]=a;else anns.push(a);return a}
+$('#dlgPet').addEventListener('close',()=>{if($('#dlgPet').returnValue!=='ok')return;const pet=$('#pPet').value,cum=$('#pCum').value;save('sc_pc',{pet,cum});
+  const a=petAnn('pet','Peticiones de oración','Oremos por:',pet,'"La oración eficaz del justo puede mucho."\nSantiago 5:16');
+  const b=petAnn('cum','Cumpleaños de la semana','¡Feliz cumpleaños!',cum,'¡Dios les bendiga\nen este nuevo año de vida!');
+  persist();drawLib();const f=a||b;if(f)show(fromSource({t:'ann',id:f.id}));toast(f?'Anuncios listos':'Listas vacías: anuncios quitados')});
+
 // ---------- Importar varias ----------
 function addSongs(list){let n=0;for(const{title,text}of list){if(!title||!text.trim())continue;songs.push({id:uid(),title:title.slice(0,120),text:text.trim()});n++}persist();tab='songs';drawLib();return n}
 $('#bulkGo').onclick=()=>{const raw=$('#bulkTxt').value.replace(/\r/g,'');const parts=raw.split(/\n\s*-{3,}\s*\n/).map(p=>p.trim()).filter(Boolean);
@@ -1050,10 +1133,10 @@ $('#iTxt').onchange=async e=>{const list=[];for(const f of e.target.files)list.p
 
 // ---------- Ajustes ----------
 $('#sBg').innerHTML=Object.keys(BGS).map(k=>`<option value="${k}">${BGNAMES[k]}</option>`).join('');
-const SETF={sBg:'bg',sDim:'dim',sSize:'size',sFont:'font',sPos:'pos',sAlign:'align',sVpp:'vpp',sUpper:'upper',sTitle:'showTitle',sFade:'fade',sAuto:'auto',sName:'name',sSub:'sub',sBver:'bver',sBver2:'bver2'};
+const SETF={sBg:'bg',sDim:'dim',sSize:'size',sFont:'font',sPos:'pos',sAlign:'align',sVpp:'vpp',sUpper:'upper',sTitle:'showTitle',sFade:'fade',sAuto:'auto',sName:'name',sSub:'sub',sBver:'bver',sBver2:'bver2',sSermMin:'sermMin',sStrBg:'strBg'};
 function previewSet(){const m=$('#monSet');paint(m,live&&live.kind!=='count'&&live.kind!=='media'?live:{text:'Cuán grande es Él\nmi corazón entona',kind:''},keyOf(live)+'set',{noAnim:true})}
 function openSet(){for(const[id,k]of Object.entries(SETF)){const el=$('#'+id);if(el.type==='checkbox')el.checked=!!set[k];else el.value=set[k]}$('#dlgSet').showModal();previewSet()}
-for(const[id,k]of Object.entries(SETF)){const el=$('#'+id);el.addEventListener(el.type==='checkbox'||el.tagName==='SELECT'?'change':'input',async()=>{set[k]=el.type==='checkbox'?el.checked:(el.type==='range'?+el.value:el.value);setVer++;
+for(const[id,k]of Object.entries(SETF)){const el=$('#'+id);el.addEventListener(el.type==='checkbox'||el.tagName==='SELECT'?'change':'input',async()=>{set[k]=el.type==='checkbox'?el.checked:(el.type==='range'||el.type==='number'?(+el.value||0):el.value);setVer++;
   if(k==='bg'&&set.bg==='propio'&&!set.custom)toast('Elige una imagen de fondo');
   if(k==='bg'&&set.bg==='video'&&!set.bgVideo)toast('Agrega un video en la pestaña Medios y pulsa “Fondo”');
   persist();
@@ -1068,7 +1151,7 @@ $('#btnSet').onclick=openSet;
 
 // ---------- Controles ----------
 $('#btnProj').onclick=openProj;
-$('#btnMus').onclick=openMus;
+$('#btnMus').onclick=openMus;$('#btnStr').onclick=openStr;
 $('#btnBlack').onclick=()=>{black=!black;render()};
 $('#btnClear').onclick=()=>{hidden=!hidden;render()};
 $('#btnLogo').onclick=()=>showLogo();
@@ -1091,7 +1174,7 @@ function onKey(e){const t=e.target;if(t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName)
   else if(k==='Escape'&&$('#overlay').classList.contains('show'))closeOverlay();}
 document.addEventListener('keydown',onKey);
 window.addEventListener('resize',()=>{fit(lastLayer($('#monLive')))});
-window.addEventListener('beforeunload',()=>{try{proj&&proj.close();mus&&mus.close()}catch(e){}});
+window.addEventListener('beforeunload',()=>{try{proj&&proj.close();mus&&mus.close();str&&str.close()}catch(e){}});
 const tick=()=>{const d=new Date();$('#clock').textContent=d.toLocaleTimeString('es',{hour:'numeric',minute:'2-digit'});if(live&&live.kind==='count')render();else paintMus()};
 setInterval(tick,1000);
 
@@ -1162,7 +1245,7 @@ function applyData(d){
   if(d.set&&typeof d.set==='object')for(const k of Object.keys(DEF))if(k!=='remoteId'&&k in d.set&&typeof d.set[k]===typeof DEF[k])set[k]=d.set[k];
   setVer++;
 }
-$('#btnMenu').onclick=()=>{$('#menuMsg').textContent='';$('#tOut').style.display='none';syncUI();$('#dlgMenu').showModal()};
+$('#btnMenu').onclick=()=>{$('#menuMsg').textContent='';$('#tOut').style.display='none';syncUI();drawAuto();$('#dlgMenu').showModal()};
 async function saveFile(name,blob){
   const dl=window.claude&&window.claude.use?await window.claude.use('downloads').catch(()=>null):null;
   if(dl)return dl.save({filename:name,data:blob});
@@ -1216,7 +1299,7 @@ if(remoteCode!==null){
   if(!plan.length)tab='songs';
   drawLib();tick();render();
   Promise.all([ensureVer(set.bver),ensureVer(set.bver2),warmMedia()]).then(()=>{if(cur)reshow();setVer++;render();if(tab==='media')drawLib()});
-  syncInit();
+  syncInit();setTimeout(autoSnap,3000);
 }
 }
 </script>

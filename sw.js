@@ -1,6 +1,6 @@
 // SmartChurch offline cache: the page is fetched fresh when online (so updates show right away),
 // the Bible and icons are served from cache. Everything keeps working offline after the first visit.
-const CACHE = 'smartchurch-v6';
+const CACHE = 'smartchurch-v7';
 const SHELL = ['./', 'index.html', 'biblia-rv1909.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
