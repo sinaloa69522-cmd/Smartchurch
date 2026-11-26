@@ -2,11 +2,14 @@
 
 App web para proyectar alabanzas, textos bíblicos y anuncios durante el culto. Funciona sin internet, directamente en el navegador.
 
-## Cómo usarla
+## Instalar la app
 
-La forma más fácil: abre la app y pulsa **Descargar app**. Se baja un solo archivo `SmartChurch.html` con todo incluido (también la Biblia), listo para usar sin internet.
+- **Windows:** descarga el instalador [SmartChurch-Setup.exe](https://github.com/sinaloa69522-cmd/Smartchurch/releases/latest/download/SmartChurch-Setup.exe), ábrelo y sigue los pasos. Queda el ícono en el escritorio y en el menú Inicio. Si hay un proyector conectado, la ventana del proyector se abre sola en esa pantalla y en pantalla completa.
+- Dentro de la app, el botón verde **⬇ Descargar app** ofrece el instalador, la instalación desde el navegador (Chrome/Edge) o un solo archivo `SmartChurch.html` con todo incluido.
+- Cada etiqueta `v*` (por ejemplo `v1.0.1`) genera el instalador con GitHub Actions (workflow *Desktop app (Windows)*) y lo adjunta al *release*.
+- Para probar en tu PC con Node instalado: `npm install` y luego `npm start`.
 
-O bien:
+## Usarla sin instalar
 
 1. Descarga el repositorio (botón **Code → Download ZIP**) y descomprímelo.
 2. Abre `index.html` en Chrome o Edge.

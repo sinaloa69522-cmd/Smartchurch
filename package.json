@@ -1,0 +1,25 @@
+{
+  "name": "smartchurch",
+  "productName": "SmartChurch",
+  "version": "1.0.0",
+  "description": "Proyección de alabanzas, textos bíblicos y anuncios para la iglesia",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:dir": "electron-builder --dir --publish never"
+  },
+  "devDependencies": {
+    "electron": "31.7.7",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.smartchurch.app",
+    "productName": "SmartChurch",
+    "files": ["index.html", "biblia-rv1909.js", "manifest.webmanifest", "icons/**", "electron/**"],
+    "directories": { "output": "dist", "buildResources": "build" },
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
+    "nsis": { "artifactName": "SmartChurch-Setup.${ext}", "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "SmartChurch" }
+  }
+}
