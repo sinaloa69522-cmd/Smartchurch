@@ -4,6 +4,10 @@ App web para proyectar alabanzas, textos bíblicos y anuncios durante el culto. 
 
 ## Cómo usarla
 
+La forma más fácil: abre la app y pulsa **Descargar app**. Se baja un solo archivo `SmartChurch.html` con todo incluido (también la Biblia), listo para usar sin internet.
+
+O bien:
+
 1. Descarga el repositorio (botón **Code → Download ZIP**) y descomprímelo.
 2. Abre `index.html` en Chrome o Edge.
 3. Pulsa **Abrir proyector**. Arrastra la ventana nueva a la pantalla del proyector y haz doble clic para pantalla completa.

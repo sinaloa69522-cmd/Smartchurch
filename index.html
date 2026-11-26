@@ -94,6 +94,8 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
   <label>Fondo <select id="bgSel"></select></label>
   <label>Letra <input type="range" id="size" min="70" max="140" value="100"></label>
   <button id="btnMenu">Respaldo</button>
+  <button id="btnDl" title="Descarga la app completa en un solo archivo para usarla sin internet">Descargar app</button>
+  <span id="dlMsg" style="font-size:13px;color:#c9d2e6"></span>
 </header>
 <main>
   <section class="col" id="colLib">
@@ -150,6 +152,7 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
 <script src="biblia-rv1909.js"></script>
 <script>
 {
+const PRISTINE='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,'');
@@ -335,11 +338,31 @@ window.addEventListener('beforeunload',()=>{try{proj&&proj.close()}catch(e){}});
 // ---------- Respaldo ----------
 const backup=()=>JSON.stringify({app:'SmartChurch',v:1,songs,anns,plan},null,1);
 $('#btnMenu').onclick=()=>{$('#menuMsg').textContent='';$('#tOut').style.display='none';$('#dlgMenu').showModal()};
-$('#bExport').onclick=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([backup()],{type:'application/json'}));a.download='smartchurch-respaldo-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();$('#menuMsg').textContent='Respaldo descargado.'}catch(e){$('#menuMsg').textContent='No se pudo descargar aquí. Usa “Copiar respaldo”.'}};
+$('#bExport').onclick=async()=>{try{await saveFile('smartchurch-respaldo-'+new Date().toISOString().slice(0,10)+'.json',new Blob([backup()],{type:'application/json'}));$('#menuMsg').textContent='Respaldo descargado.'}catch(e){$('#menuMsg').textContent=e&&e.code==='declined'?'Descarga cancelada.':'No se pudo descargar aquí. Usa “Copiar respaldo”.'}};
 $('#bCopy').onclick=()=>{const o=$('#tOut');o.value=backup();o.style.display='block';o.select();navigator.clipboard?.writeText(o.value).then(()=>$('#menuMsg').textContent='Copiado. Pégalo en un archivo de texto para guardarlo.',()=>$('#menuMsg').textContent='Selecciona el texto y cópialo.')};
 $('#iImport').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.songs))throw 0;songs=d.songs.filter(s=>s&&s.title).map(s=>({id:String(s.id||uid()),title:String(s.title),text:String(s.text||'')}));anns=(d.anns||[]).map(s=>({id:String(s.id||uid()),title:String(s.title),text:String(s.text||'')}));plan=Array.isArray(d.plan)?d.plan:[];persist();drawLib();$('#menuMsg').textContent=`Restaurado: ${songs.length} alabanzas, ${anns.length} anuncios.`}catch(err){$('#menuMsg').textContent='Ese archivo no es un respaldo válido.'}};
 $('#iTxt').onchange=async e=>{let n=0;for(const f of e.target.files){const text=(await f.text()).trim();if(!text)continue;songs.push({id:uid(),title:f.name.replace(/\.txt$/i,''),text});n++}persist();tab='songs';drawLib();$('#menuMsg').textContent=`Importadas ${n} alabanzas.`};
 $('#iBg').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();img.onload=()=>{const c=document.createElement('canvas');const sc=Math.min(1,1920/img.width);c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);set.custom=c.toDataURL('image/jpeg',.82);set.bg='propio';$('#bgSel').value='propio';persist();render();$('#menuMsg').textContent='Fondo aplicado.';URL.revokeObjectURL(img.src)};img.src=URL.createObjectURL(f)};
+
+// ---------- Descargar app ----------
+async function saveFile(name,blob){
+  const dl=window.claude&&window.claude.use?await window.claude.use('downloads').catch(()=>null):null;
+  if(dl)return dl.save({filename:name,data:blob});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+}
+async function buildApp(){
+  let html=null;
+  if(location.protocol!=='file:'){try{const r=await fetch(location.href.split('#')[0],{cache:'no-store'});if(r.ok){const t=await r.text();if(t.includes('id="btnDl"'))html=t}}catch(e){}}
+  if(!html)html=PRISTINE.replace(/<html([^>]*?)\sdata-theme="[^"]*"/,'<html$1');
+  const tag='<script src="biblia-rv1909.js"></'+'script>';
+  if(html.includes(tag)){if(!BIB)throw new Error('sin biblia');html=html.replace(tag,()=>'<script>window.BIBLIA_RV1909='+JSON.stringify(BIB).replace(/</g,'\\u003c')+';</'+'script>')}
+  return html;
+}
+$('#btnDl').onclick=async()=>{const m=$('#dlMsg');m.textContent='Preparando…';
+  try{const blob=new Blob([await buildApp()],{type:'text/html'});const name='SmartChurch.html';
+    await saveFile(name,blob);m.textContent='Descargada ✓';
+  }catch(e){m.textContent=e&&e.code==='declined'?'Descarga cancelada':'No se pudo descargar aquí'}
+  setTimeout(()=>m.textContent='',6000)};
 
 drawLib();render();
 }
