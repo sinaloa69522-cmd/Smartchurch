@@ -28,7 +28,7 @@ App web para proyectar alabanzas, textos bíblicos y anuncios durante el culto. 
 - **Biblia:** Reina-Valera 1909, Reina-Valera 1865 y King James (inglés), con modo bilingüe; de 1 a 4 versículos por diapositiva y búsqueda por palabra.
 - **Sermón:** escribe tus puntos; un párrafo que sea solo una cita (ej. `Juan 3:16-18`) se proyecta con el texto bíblico; `#` marca un título.
 - **Medios:** videos de YouTube (pega el link o usa la lista sugerida de alabanzas), fotos y videos propios, con control de pausa y sonido. Un video propio puede usarse como fondo en movimiento.
-- **Galería de fondos:** cruz al atardecer, montañas, agua, sol sobre el mar, cielo de estrellas y rayos de luz; fondos en movimiento (luces, aurora, cielo con nubes); colores, imagen propia y verde croma. Se eligen con un clic en **Ajustes**.
+- **Galería de fondos:** con movimiento (cruz con nubes, olas del mar, estrellas brillando, rayos de luz, luces que suben, fuego del Espíritu); fijos: cruz al atardecer, montañas, agua, sol sobre el mar, cielo de estrellas y rayos de luz; fondos en movimiento (luces, aurora, cielo con nubes); colores, imagen propia y verde croma. Se eligen con un clic en **Ajustes**.
 - **Versículo del día** debajo del logo, cambia cada día.
 - **Santa Cena, bautismos y presentación de niños:** pantallas listas con sus versículos (en **Extras**).
 - **Extras:** cuenta regresiva, pantalla de logo de la iglesia y texto libre. **Mensaje rápido** en una franja sobre la proyección.
