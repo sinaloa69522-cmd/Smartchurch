@@ -144,9 +144,11 @@ dialog textarea{min-height:46vh;font-family:inherit;line-height:1.5}
 
 <dialog id="dlgInstall"><form method="dialog">
   <h3>Descargar SmartChurch</h3>
-  <p><b>Para Windows (recomendado):</b> descarga el instalador, ábrelo y sigue los pasos. Te queda el ícono de SmartChurch en el escritorio y en el menú Inicio. Si conectas un proyector, la ventana del proyector se abre sola en esa pantalla.</p>
-  <div class="row"><a id="exeLink" href="https://github.com/sinaloa69522-cmd/Smartchurch/releases/latest/download/SmartChurch-Setup.exe" target="_blank" rel="noopener" style="flex:1"><button type="button" class="pri" style="width:100%">⬇ Descargar para Windows (.exe)</button></a></div>
-  <p class="hint">Windows puede mostrar “Windows protegió su PC”: pulsa <b>Más información</b> y luego <b>Ejecutar de todas formas</b>.</p>
+  <p><b>Instalar como app (recomendado):</b> abre la página de SmartChurch en Edge o Chrome y pulsa <b>Instalar</b>. Queda con su ícono en el escritorio y en el menú Inicio, funciona sin internet y se actualiza sola.</p>
+  <div class="row" id="pagesRow"><a href="https://sinaloa69522-cmd.github.io/Smartchurch/" target="_blank" rel="noopener" style="flex:1"><button type="button" class="pri" style="width:100%">Abrir la página para instalar</button></a></div>
+  <p><b>Instalador clásico de Windows:</b> descarga el instalador, ábrelo y sigue los pasos. Te queda el ícono de SmartChurch en el escritorio y en el menú Inicio. Si conectas un proyector, la ventana del proyector se abre sola en esa pantalla.</p>
+  <div class="row"><a id="exeLink" href="https://github.com/sinaloa69522-cmd/Smartchurch/releases/latest/download/SmartChurch-Setup.exe" target="_blank" rel="noopener" style="flex:1"><button type="button" style="width:100%">⬇ Descargar para Windows (.exe)</button></a></div>
+  <p class="hint">Windows puede mostrar “Windows protegió su PC”: pulsa <b>Más información</b> y luego <b>Ejecutar de todas formas</b>. Si tu PC tiene activado el Control inteligente de aplicaciones, el .exe se bloquea: usa la opción de arriba.</p>
   <div id="pwaRow" hidden><p><b>Instalar desde el navegador:</b> Chrome o Edge la instalan como app en un clic.</p><div class="row"><button type="button" id="bPwa">Instalar desde el navegador</button></div></div>
   <p><b>Un solo archivo:</b> baja <code>SmartChurch.html</code> con todo incluido. Lo abres con doble clic, sin instalar nada. Ideal para pasarlo en una memoria USB.</p>
   <div class="row"><button type="button" id="bOneFile">Descargar en un solo archivo</button></div>
@@ -386,6 +388,7 @@ if(/Electron/.test(navigator.userAgent))$('#btnDl').hidden=true;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('#pwaRow').hidden=false});
 window.addEventListener('appinstalled',()=>{installEvt=null;$('#pwaRow').hidden=true;$('#instMsg').textContent='SmartChurch quedó instalada. Búscala en tu escritorio o menú Inicio.'});
 $('#bPwa').onclick=async()=>{if(!installEvt)return;installEvt.prompt();const r=await installEvt.userChoice;installEvt=null;if(r&&r.outcome==='accepted')$('#pwaRow').hidden=true};
+if(/github\.io$/.test(location.host))$('#pagesRow').hidden=true;
 $('#btnDl').onclick=()=>{$('#instMsg').textContent='';$('#dlgInstall').showModal()};
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&!/claude\.ai|claudeusercontent|claude\.site/.test(location.host))navigator.serviceWorker.register('sw.js').catch(()=>{});
 
