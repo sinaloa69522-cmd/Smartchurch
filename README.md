@@ -31,6 +31,9 @@ App web para proyectar alabanzas, textos bíblicos y anuncios durante el culto. 
 - **Fondos en movimiento:** luces suaves, aurora y cielo con nubes, además de colores, imagen propia y verde croma.
 - **Extras:** cuenta regresiva, pantalla de logo de la iglesia y texto libre. **Mensaje rápido** en una franja sobre la proyección.
 - **Ajustes:** tamaño y tipo de letra, texto al centro o abajo para transmisión, mayúsculas, oscurecer fondo, transición suave.
+- **Imprimir o compartir el culto:** en **Culto**, 🖨 Imprimir saca una hoja con letras y acordes (o PDF); Compartir manda el orden por WhatsApp.
+- **Historial de alabanzas:** cada alabanza proyectada se anota; se ve cuándo se cantó, las más cantadas y las olvidadas (en **Extras**).
+- **Extras:** nombre del predicador en pantalla, momento de ofrenda con versículos y música de fondo, y lectura bíblica del año (unos 3 capítulos por día).
 - **Copias automáticas:** cada día se guarda una copia en la computadora (últimos 7 días); se restaura desde **Respaldo**.
 - **Sincronizar entre computadoras:** en **Respaldo**, crea un archivo dentro de OneDrive, Google Drive o Dropbox y úsalo en cada computadora (Edge o Chrome).
 - Atajos: `→`/espacio siguiente, `←` anterior, `1`–`9` ir a diapositiva, `B` negro, `C` ocultar texto, `L` logo, `M` mensaje, `P` proyector, `K` pausar video.

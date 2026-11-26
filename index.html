@@ -143,6 +143,10 @@ table.keys{border-collapse:collapse;width:100%}table.keys td{padding:5px 6px;bor
 .stage .cd .lbl{font-size:4.4cqw;font-weight:700;text-shadow:0 .3cqw 1cqw #000d}
 .stage .cd .tm{font-size:22cqw;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:#ffd77a;text-shadow:0 .4cqw 1.4cqw #000d;margin-top:2cqh}
 .stage .cd .nm{font-size:3.2cqw;margin-top:3cqh;opacity:.85}
+.stage .lt{position:absolute;left:4cqw;bottom:7cqh;z-index:4;max-width:70cqw;background:#0b1226f0;border-left:.7cqw solid #ffd77a;border-radius:.8cqw;padding:1.4cqh 2.6cqw;color:#fff;text-align:left;animation:ltin .4s ease-out}
+.stage.has-msg .lt{bottom:16cqh}
+.stage .lt b{display:block;font-size:3.6cqw;line-height:1.15}.stage .lt span{display:block;font-size:2.2cqw;color:#ffd77a;margin-top:.4cqh}
+@keyframes ltin{from{opacity:0;transform:translateX(-3cqw)}to{opacity:1;transform:none}}
 .stage .msg{position:absolute;left:0;right:0;bottom:0;z-index:4;background:#c8372dee;color:#fff;font-size:3.4cqw;font-weight:700;padding:1.6cqh 3cqw;text-align:center;line-height:1.2}
 .stage .blk{position:absolute;inset:0;background:#000;z-index:6;transition:opacity .4s;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.stage .layer.fade{animation:none}.stage .blk{transition:none}.stage .bg{animation:none!important}}
@@ -403,7 +407,7 @@ let plan=planObj().items;
 const DEF={bg:'noche',size:100,custom:'',dim:0,font:'sans',pos:'mid',align:'c',vpp:1,upper:false,showTitle:true,fade:true,auto:true,name:'',sub:'Bienvenidos a la casa de Dios',logo:'',bver:'rv1909',bver2:'',bgVideo:'',remoteId:'',sermMin:0,strBg:'#00b140'};
 let set=Object.assign({},DEF,load('sc_set',{}));
 let setVer=0,syncTimer=null;
-const snapshot=()=>({app:'SmartChurch',v:3,saved:Date.now(),songs,anns,serms,plans,planId,yt:mediaList.filter(m=>m.type==='yt'),set:Object.assign({},set,{remoteId:''})});
+const snapshot=()=>({app:'SmartChurch',v:3,saved:Date.now(),hist,songs,anns,serms,plans,planId,yt:mediaList.filter(m=>m.type==='yt'),set:Object.assign({},set,{remoteId:''})});
 function persist(local){
   save('sc_songs',songs);save('sc_ann',anns);save('sc_serm',serms);save('sc_plans',plans);save('sc_planId',planId);save('sc_media',mediaList);
   if(!save('sc_set',set))toast('La imagen es muy grande para guardarse; usa una más pequeña.');
@@ -762,7 +766,8 @@ function bibleSlides(b,c,v1,v2){
 }
 let cur=null,curPlan=-1;
 let liveIdx=-1,black=false,hidden=false,live=null,msgOn=false,curStart=Date.now(),str=null;
-let trans=load('sc_trans',{}),musChords=load('sc_musCh',true);
+let trans=load('sc_trans',{}),musChords=load('sc_musCh',true),hist=load('sc_hist',{});
+let ltOn=false,ltTimer=null,LT=load('sc_lt',{name:'',role:'',auto:true,recent:[]}),offerTimer=null,offerMusic=null;
 
 function fromSource(src){
   if(!src)return null;
@@ -782,6 +787,10 @@ function fromSource(src){
   return null;
 }
 const srcLabel=s=>{const it=fromSource(s);return it?it.title:'(eliminado)'};
+function recordSong(id){const a=hist[id]||(hist[id]=[]);if(a[a.length-1]!==today()){a.push(today());if(a.length>80)a.shift();save('sc_hist',hist)}}
+const daysAgo=d=>Math.round((Date.parse(today())-Date.parse(d))/864e5);
+const agoTxt=d=>{const n=daysAgo(d);return n<=0?'hoy':n===1?'ayer':n<14?`hace ${n} días`:n<60?`hace ${Math.round(n/7)} semanas`:`hace ${Math.round(n/30)} meses`};
+function histTxt(id){const a=hist[id];if(!a||!a.length)return '';return `Cantada ${agoTxt(a[a.length-1])} · ${a.length} ${a.length===1?'vez':'veces'}`}
 const KIND={song:'Alabanza',ann:'Anuncio',bible:'Biblia',serm:'Sermón',media:'Medio'};
 
 // ---------- Escenario ----------
@@ -832,6 +841,7 @@ function paint(el,sl,key,opts={}){
     const v=ly.querySelector('.media video');if(v)setupVideo(v,!!opts.main);
   }else if(sl&&sl.kind==='count'){const ly=lastLayer(st);if(ly)ly.innerHTML=inner(sl)}
   let mg=st.querySelector('.msg');if(m){if(!mg){mg=doc.createElement('div');mg.className='msg';st.insertBefore(mg,st.querySelector('.blk'))}mg.textContent=m}else if(mg)mg.remove();
+  let lt=st.querySelector('.lt');if(ltOn&&LT.name&&!opts.noBlack){const h=`<b>${esc(LT.name)}</b>${LT.role?`<span>${esc(LT.role)}</span>`:''}`;if(!lt){lt=doc.createElement('div');lt.className='lt';st.insertBefore(lt,st.querySelector('.blk'))}if(lt.innerHTML!==h)lt.innerHTML=h}else if(lt)lt.remove();
   st.querySelector('.blk').style.opacity=black&&!opts.noBlack?1:0;
 }
 function setupVideo(v,main){
@@ -907,13 +917,14 @@ function chordHTML(raw,n){return raw.split('\n').map(l=>{
 const STR_CSS=`html,body{margin:0;height:100%;overflow:hidden;font-family:"Segoe UI",system-ui,sans-serif}
 #sb{position:fixed;left:5vw;right:5vw;bottom:6vh;max-height:36vh;background:#0b1226;border-left:.8vh solid #ffd77a;border-radius:1.2vh;padding:2vh 3vw;color:#fff;text-align:center;box-sizing:border-box;transition:opacity .25s}
 #sb.off{opacity:0}#st{white-space:pre-line;font-weight:600;line-height:1.25;text-shadow:0 .2vh .4vh #000}#sr{color:#ffd77a;font-weight:700;margin-top:.8vh;font-size:3.4vh}
+#slt{position:fixed;left:5vw;bottom:6vh;background:#0b1226;border-left:.8vh solid #ffd77a;border-radius:1.2vh;padding:2vh 3vw;color:#fff;display:none}#slt b{display:block;font-size:6vh}#slt span{display:block;font-size:3.6vh;color:#ffd77a}
 #tip{position:fixed;top:2vh;left:0;right:0;text-align:center;color:#fff;font-size:2.2vh;text-shadow:0 0 4px #000;transition:opacity 1s}`;
 function strAlive(){try{return str&&!str.closed&&str.document&&str.document.getElementById('sb')}catch(e){return false}}
 function openStr(){
   if(strAlive()){str.focus();return}
   let w=null;try{w=window.open('','smartchurch_envivo','width=1280,height=720')}catch(e){}
   if(!w){toast('Tu navegador no permitió abrir otra ventana. Permite las ventanas emergentes para este sitio.');return}
-  const d=w.document;d.open();d.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>En vivo · SmartChurch</title><style>${STR_CSS}</style></head><body><div id="tip">En OBS: agrega “Captura de ventana” → esta ventana, y aplica el filtro “Croma” (Chroma Key)</div><div id="sb" class="off"><div id="st"></div><div id="sr"></div></div></body></html>`);d.close();
+  const d=w.document;d.open();d.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>En vivo · SmartChurch</title><style>${STR_CSS}</style></head><body><div id="tip">En OBS: agrega “Captura de ventana” → esta ventana, y aplica el filtro “Croma” (Chroma Key)</div><div id="sb" class="off"><div id="st"></div><div id="sr"></div></div><div id="slt"></div></body></html>`);d.close();
   d.addEventListener('keydown',onKey);setTimeout(()=>{const t=d.getElementById('tip');if(t)t.style.opacity=0},9000);
   w.addEventListener('resize',paintStr);
   str=w;render();toast('Ventana En vivo abierta');
@@ -921,7 +932,8 @@ function openStr(){
 function paintStr(){
   if(!strAlive())return;const d=str.document;d.body.style.background=set.strBg||'#00b140';
   const sl=live,ok=sl&&!black&&!hidden&&sl.text&&sl.text.trim()&&!['logo','count','media'].includes(sl.kind);
-  const sb=d.getElementById('sb'),t=d.getElementById('st');sb.classList.toggle('off',!ok);if(!ok)return;
+  const lt=d.getElementById('slt'),lon=ltOn&&LT.name&&!black;lt.style.display=lon?'block':'none';if(lon)lt.innerHTML=`<b>${esc(LT.name)}</b>${LT.role?`<span>${esc(LT.role)}</span>`:''}`;
+  const sb=d.getElementById('sb'),t=d.getElementById('st');sb.classList.toggle('off',!ok||lon);if(!ok||lon)return;
   t.textContent=set.upper&&cur&&cur.kind==='song'?sl.text.toUpperCase():sl.text;d.getElementById('sr').textContent=sl.ref||'';
   let z=5.6;t.style.fontSize=z+'vh';let n=0;while(sb.scrollHeight>sb.clientHeight+2&&z>2.2&&n++<50){z-=.2;t.style.fontSize=z+'vh'}
 }
@@ -971,7 +983,7 @@ function goLive(sl){live=sl;black=false;ytPaused=false;ytMuted=false;render()}
 function go(i){
   if(!cur)return;
   if(i>=cur.slides.length&&set.auto&&curPlan>=0&&plan[curPlan+1]){loadPlan(curPlan+1,0);return}
-  i=Math.max(0,Math.min(cur.slides.length-1,i));liveIdx=i;goLive(cur.slides[i]);
+  i=Math.max(0,Math.min(cur.slides.length-1,i));liveIdx=i;goLive(cur.slides[i]);if(cur.src&&cur.src.t==='song')recordSong(cur.src.id);
   const el=document.querySelectorAll('#slides .slide')[i];el&&el.scrollIntoView({block:'nearest'});
 }
 function slideCard(s,i){
@@ -1003,7 +1015,7 @@ function drawLib(){
     <div class="row"><input id="planName" value="${esc(P.name)}" aria-label="Nombre del culto"><input id="planDate" type="date" value="${esc(P.date||'')}" style="flex:none;width:160px" aria-label="Fecha"></div>
     <div class="row"><button id="planDup">Duplicar</button><button id="planDel">Eliminar culto</button></div>
     <p class="hint">Agrega alabanzas, pasajes, sermones, medios y anuncios con “+ Culto”. Al terminar uno, la flecha → pasa al siguiente.</p>`+
-    (plan.length?plan.map((s,i)=>`<div class="item" tabindex="0" data-i="${i}"><span class="t">${i+1}. ${esc(srcLabel(s))}<br><span class="kind">${KIND[s.t]||''}</span></span><button class="x" data-up="${i}" title="Subir" aria-label="Subir">↑</button><button class="x" data-dn="${i}" title="Bajar" aria-label="Bajar">↓</button><button class="x" data-del="${i}" title="Quitar" aria-label="Quitar">✕</button></div>`).join('')+`<div class="row" style="margin-top:10px"><button id="planGo" class="pri" title="Empieza el culto desde el primer elemento">▶ Empezar</button><button id="planClr">Vaciar lista</button></div>`:`<div class="empty">Este culto está vacío.<br>Abre una alabanza o un pasaje y pulsa “+ Al culto”.</div>`);
+    (plan.length?plan.map((s,i)=>`<div class="item" tabindex="0" data-i="${i}"><span class="t">${i+1}. ${esc(srcLabel(s))}<br><span class="kind">${KIND[s.t]||''}${s.t==='song'&&hist[s.id]&&daysAgo(hist[s.id].at(-1))>0&&daysAgo(hist[s.id].at(-1))<15?` · <span style="color:#ffb35c">cantada ${agoTxt(hist[s.id].at(-1))}</span>`:''}</span></span><button class="x" data-up="${i}" title="Subir" aria-label="Subir">↑</button><button class="x" data-dn="${i}" title="Bajar" aria-label="Bajar">↓</button><button class="x" data-del="${i}" title="Quitar" aria-label="Quitar">✕</button></div>`).join('')+`<div class="row" style="margin-top:10px"><button id="planGo" class="pri" title="Empieza el culto desde el primer elemento">▶ Empezar</button><button id="planClr">Vaciar lista</button></div><div class="row"><button id="planPrint" title="Hoja con letras y acordes para los músicos">🖨 Imprimir</button><button id="planShare" title="Enviar el orden del culto por WhatsApp u otra app">Compartir</button></div>`:`<div class="empty">Este culto está vacío.<br>Abre una alabanza o un pasaje y pulsa “+ Al culto”.</div>`);
     $('#planSel').onchange=e=>{planId=e.target.value;plan=planObj().items;curPlan=-1;persist(true);save('sc_planId',planId);drawLib()};
     $('#planNew').onclick=()=>{const p={id:uid(),name:'Nuevo culto',date:today(),items:[]};plans.push(p);planId=p.id;plan=p.items;curPlan=-1;persist();drawLib();$('#planName').select()};
     $('#planName').onchange=e=>{planObj().name=e.target.value.trim()||'Culto';persist();drawLib()};
@@ -1015,13 +1027,15 @@ function drawLib(){
       if(d.dn!=null){const i=+d.dn;if(i<plan.length-1){[plan[i+1],plan[i]]=[plan[i],plan[i+1]];if(curPlan===i)curPlan++;else if(curPlan===i+1)curPlan--;persist();drawLib()}return}
       if(d.del!=null){const i=+d.del;plan.splice(i,1);if(curPlan===i)curPlan=-1;else if(curPlan>i)curPlan--;persist();drawLib();return}
       if(e.target.id==='planGo'){loadPlan(0,0);return}
+      if(e.target.id==='planPrint'){printPlan();return}
+      if(e.target.id==='planShare'){sharePlan();return}
       if(e.target.id==='planClr'){if(e.target.dataset.sure){plan.length=0;curPlan=-1;persist();drawLib()}else{e.target.dataset.sure=1;e.target.textContent='¿Seguro? Clic otra vez'}return}
       const it=e.target.closest('.item');if(it)loadPlan(+it.dataset.i)};
   }else if(tab==='songs'||tab==='ann'||tab==='serm'){
     const T={songs:['song',songs,'alabanza','alabanzas','por título o letra'],ann:['ann',anns,'diapositiva de anuncio','anuncios','anuncio'],serm:['serm',serms,'predicación','predicaciones','predicación']}[tab];
     const [t,arr,one,many,ph]=T;const q=norm(songQ);
     const list=arr.filter(s=>!q||norm(s.title+' '+s.text+' '+(s.author||'')).includes(q)).sort((a,b)=>a.title.localeCompare(b.title,'es'));
-    L.innerHTML=`<div class="row"><input id="q" type="search" placeholder="Buscar ${ph}" value="${esc(songQ)}"></div><div class="row"><button class="pri" id="newBtn">+ Nueva ${one}</button>${tab==='songs'?'<button id="bulkBtn">Importar varias</button>':''}${tab==='ann'?'<button id="petBtn">Peticiones y cumpleaños</button>':''}</div>${tab==='serm'?'<p class="hint">Escribe tus puntos. Un párrafo que sea solo una cita (ej. <b>Juan 3:16-18</b>) se proyecta con el texto bíblico. Una línea que empieza con # es un título.</p>':''}<p class="hint">${arr.length} ${many}${q?` · ${list.length} encontradas`:''}</p>`+(tab==='songs'?(()=>{const sg=SONG_SUG.filter(x=>!songs.some(y=>y.title===x[1]));const grp=c=>{const a=sg.filter(x=>x[0]===c);return a.length?`<h4 style="margin:8px 0 2px">${c}</h4>`+a.map(([,t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${esc(tx.split('\n').find(l=>l&&l[0]!=='[')||'')}</small></span><button class="x" data-asug="${esc(t)}">+ Agregar</button></div>`).join(''):''};const cs=CORO_SUG.map(([c,ts])=>[c,ts.filter(t=>!songs.some(y=>y.title===t))]).filter(([,ts])=>ts.length);return (sg.length?`<details${songs.length<5?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Himnos de adoración y júbilo (${sg.length})</summary><p class="hint">Himnos clásicos con la letra completa.</p>${grp('Adoración')}${grp('Júbilo')}<div class="row" style="margin-top:6px"><button id="asugAll">Agregar todos</button></div></details>`:'')+(cs.length?`<details><summary style="cursor:pointer;font-weight:600;margin:6px 0">Coros pentecostales</summary><p class="hint">Estos coros tienen derechos de autor, así que la app no trae la letra. Toca uno, pega o escribe la letra y guárdalo.</p>${cs.map(([c,ts])=>`<h4 style="margin:8px 0 2px">${c}</h4>`+ts.map(t=>`<div class="item"><span class="t">${esc(t)}</span><button class="x" data-coro="${esc(t)}">Escribir letra</button></div>`).join('')).join('')}</details>`:'')+((sg.length||cs.length)?'<h4>Mis alabanzas</h4>':'')})():'')+(tab==='serm'?(()=>{const sg=SERM_SUG.filter(([t])=>!serms.some(x=>x.title===t));return sg.length?`<details${serms.length<3?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Bosquejos sugeridos (${sg.length})</summary>${sg.map(([t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${(tx.match(/^[^#\n].{0,38}\d+:\d+(-\d+)?$/gm)||[]).slice(0,3).map(esc).join(' · ')}</small></span><button class="x" data-ssug="${esc(t)}">+ Agregar</button></div>`).join('')}<div class="row" style="margin-top:6px"><button id="ssugAll">Agregar todos</button></div></details><h4>Mis predicaciones</h4>`:''})():'')+(list.length?list.map(s=>`<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="t">${esc(s.title)}${s.author?`<br><small>${esc(s.author)}</small>`:''}</span><button class="x" data-add="${esc(s.id)}" title="Agregar al culto">+ Culto</button><button class="x" data-ed="${esc(s.id)}">Editar</button></div>`).join(''):`<div class="empty">No hay resultados.</div>`);
+    L.innerHTML=`<div class="row"><input id="q" type="search" placeholder="Buscar ${ph}" value="${esc(songQ)}"></div><div class="row"><button class="pri" id="newBtn">+ Nueva ${one}</button>${tab==='songs'?'<button id="bulkBtn">Importar varias</button>':''}${tab==='ann'?'<button id="petBtn">Peticiones y cumpleaños</button>':''}</div>${tab==='serm'?'<p class="hint">Escribe tus puntos. Un párrafo que sea solo una cita (ej. <b>Juan 3:16-18</b>) se proyecta con el texto bíblico. Una línea que empieza con # es un título.</p>':''}<p class="hint">${arr.length} ${many}${q?` · ${list.length} encontradas`:''}</p>`+(tab==='songs'?(()=>{const sg=SONG_SUG.filter(x=>!songs.some(y=>y.title===x[1]));const grp=c=>{const a=sg.filter(x=>x[0]===c);return a.length?`<h4 style="margin:8px 0 2px">${c}</h4>`+a.map(([,t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${esc(tx.split('\n').find(l=>l&&l[0]!=='[')||'')}</small></span><button class="x" data-asug="${esc(t)}">+ Agregar</button></div>`).join(''):''};const cs=CORO_SUG.map(([c,ts])=>[c,ts.filter(t=>!songs.some(y=>y.title===t))]).filter(([,ts])=>ts.length);return (sg.length?`<details${songs.length<5?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Himnos de adoración y júbilo (${sg.length})</summary><p class="hint">Himnos clásicos con la letra completa.</p>${grp('Adoración')}${grp('Júbilo')}<div class="row" style="margin-top:6px"><button id="asugAll">Agregar todos</button></div></details>`:'')+(cs.length?`<details><summary style="cursor:pointer;font-weight:600;margin:6px 0">Coros pentecostales</summary><p class="hint">Estos coros tienen derechos de autor, así que la app no trae la letra. Toca uno, pega o escribe la letra y guárdalo.</p>${cs.map(([c,ts])=>`<h4 style="margin:8px 0 2px">${c}</h4>`+ts.map(t=>`<div class="item"><span class="t">${esc(t)}</span><button class="x" data-coro="${esc(t)}">Escribir letra</button></div>`).join('')).join('')}</details>`:'')+((sg.length||cs.length)?'<h4>Mis alabanzas</h4>':'')})():'')+(tab==='serm'?(()=>{const sg=SERM_SUG.filter(([t])=>!serms.some(x=>x.title===t));return sg.length?`<details${serms.length<3?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Bosquejos sugeridos (${sg.length})</summary>${sg.map(([t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${(tx.match(/^[^#\n].{0,38}\d+:\d+(-\d+)?$/gm)||[]).slice(0,3).map(esc).join(' · ')}</small></span><button class="x" data-ssug="${esc(t)}">+ Agregar</button></div>`).join('')}<div class="row" style="margin-top:6px"><button id="ssugAll">Agregar todos</button></div></details><h4>Mis predicaciones</h4>`:''})():'')+(list.length?list.map(s=>`<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="t">${esc(s.title)}${s.author?`<br><small>${esc(s.author)}</small>`:''}${tab==='songs'&&hist[s.id]?`<br><small style="color:#8fa3c8">🕘 ${esc(histTxt(s.id))}</small>`:''}</span><button class="x" data-add="${esc(s.id)}" title="Agregar al culto">+ Culto</button><button class="x" data-ed="${esc(s.id)}">Editar</button></div>`).join(''):`<div class="empty">No hay resultados.</div>`);
     const qi=$('#q');qi.oninput=()=>{songQ=qi.value;const p=qi.selectionStart;drawLib();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
     $('#newBtn').onclick=()=>edit(tab,null);
     const ssa=$('#ssugAll');if(ssa)ssa.onclick=()=>{let n=0;for(const[t,tx]of SERM_SUG)if(!serms.some(x=>x.title===t)){serms.push({id:uid(),title:t,text:tx});n++}persist();drawLib();toast(n+' bosquejos agregados')};
@@ -1081,6 +1095,18 @@ function drawLib(){
     <div class="row"><input id="cdLbl" value="El culto comienza en" aria-label="Texto arriba"></div>
     <div class="row"><input id="cdDone" value="¡Bienvenidos!" aria-label="Texto al terminar"></div>
     <div class="row"><button class="pri" id="cdGo">▶ Proyectar cuenta regresiva</button></div>
+    <h4>Nombre en pantalla</h4><p class="hint">Una franja abajo con el nombre de quien predica o canta. Sale en el proyector y en la ventana En vivo.</p>
+    <div class="row"><input id="ltName" list="ltRecent" placeholder="Ej.: Pastor Juan Pérez" value="${esc(LT.name)}"><input id="ltRole" placeholder="Ej.: Predicador invitado" value="${esc(LT.role)}"></div>
+    <datalist id="ltRecent">${(LT.recent||[]).map(r=>`<option value="${esc(r.name)}">${esc(r.role||'')}</option>`).join('')}</datalist>
+    <div class="row"><button class="pri" id="ltGo">${ltOn?'Quitar nombre':'Mostrar nombre'}</button></div><label class="chk"><input type="checkbox" id="ltAuto"${LT.auto?' checked':''}> Quitar solo a los 12 segundos</label>
+    <h4>Momento de ofrenda</h4><p class="hint">Proyecta versículos sobre dar (pasan solos) y, si quieres, música de fondo de un video de YouTube de tu lista en Medios.</p>
+    <div class="row"><textarea id="ofInfo" style="min-height:60px" placeholder="Datos para ofrendar (opcional), ej.: Zelle: ofrendas@miiglesia.org">${esc(load('sc_offer',''))}</textarea></div>
+    <div class="row"><label class="field" style="flex:1"><span>Música de fondo</span><select id="ofMus"><option value="">Sin música</option>${mediaList.filter(m=>m.type==='yt').map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}</select></label></div>
+    <div class="row"><button class="pri" id="ofGo">▶ Proyectar ofrenda</button><button id="ofStop"${offerMusic?'':' hidden'}>■ Parar música</button></div><label class="chk"><input type="checkbox" id="ofAuto" checked> Pasar los versículos solos cada 15 segundos</label>
+    <h4>Lectura bíblica del año</h4><p class="hint">Toda la Biblia en un año, unos 3 capítulos por día.</p>
+    <div class="row"><input id="rdDate" type="date" value="${today()}" style="flex:none;width:170px"><span id="rdLbl" style="align-self:center;font-weight:600"></span></div>
+    <div class="row"><button class="pri" id="rdGo">Proyectar</button><button id="rdPlan">+ Al culto</button><button id="rdShare">Compartir</button></div>
+    <h4>Historial de alabanzas</h4><p class="hint">Se anota sola cada alabanza que proyectas.</p><div id="histBox"></div>
     <h4>Pantalla de logo</h4><p class="hint">Muestra el nombre y logo de tu iglesia (configúralos en Ajustes).</p>
     <div class="row"><button id="lgGo">Proyectar logo</button><button id="lgSet">Ajustes de logo</button></div>
     <h4>Texto libre</h4><p class="hint">Proyecta cualquier texto al momento, sin guardarlo.</p>
@@ -1090,6 +1116,19 @@ function drawLib(){
       if(at){const[h,m]=at.split(':').map(Number);const d=new Date();d.setHours(h,m,0,0);if(d<Date.now())d.setDate(d.getDate()+1);end=+d}else end=Date.now()+Math.max(1,+$('#cdMin').value||5)*60000;
       cur=null;liveIdx=-1;goLive({kind:'count',end,label:$('#cdLbl').value,done:$('#cdDone').value});toast('Cuenta regresiva en pantalla')};
     $('#lgGo').onclick=()=>showLogo(true);$('#lgSet').onclick=openSet;
+    const ltSave=()=>{LT.name=$('#ltName').value.trim();LT.role=$('#ltRole').value.trim();LT.auto=$('#ltAuto').checked;save('sc_lt',LT);if(ltOn)render()};
+    $('#ltName').oninput=$('#ltRole').oninput=ltSave;$('#ltAuto').onchange=ltSave;
+    $('#ltName').onchange=()=>{const r=(LT.recent||[]).find(x=>x.name===$('#ltName').value.trim());if(r&&!$('#ltRole').value){$('#ltRole').value=r.role||'';ltSave()}};
+    $('#ltGo').onclick=()=>{ltSave();if(!ltOn){if(!LT.name){$('#ltName').focus();return}LT.recent=[{name:LT.name,role:LT.role},...(LT.recent||[]).filter(x=>x.name!==LT.name)].slice(0,8);save('sc_lt',LT)}setLT(!ltOn)};
+    $('#ofGo').onclick=startOffer;$('#ofStop').onclick=stopOfferMusic;
+    const rdUpd=()=>{const r=readingFor($('#rdDate').value||today());$('#rdLbl').textContent=r?`Día ${r.day}: ${r.label}`:'';return r};rdUpd();$('#rdDate').onchange=rdUpd;
+    $('#rdGo').onclick=()=>{const r=rdUpd();if(!r)return;show({kind:'bible',title:'Lectura: '+r.label,slides:r.list.flatMap(([b,c])=>{const x=bibleSlides(b,c);if(x[0])x[0]={...x[0],title:BOOKS[b]+' '+c};return x})},0)};
+    $('#rdPlan').onclick=()=>{const r=rdUpd();if(!r)return;for(const[b,c]of r.list)plan.push({t:'bible',b,c});persist();toast(r.list.length+' capítulos agregados a: '+planObj().name)};
+    $('#rdShare').onclick=async()=>{const r=rdUpd();if(!r)return;const t=`📖 Lectura bíblica del día (${fmtDate($('#rdDate').value||today())}):\n${r.label}${set.name?'\n— '+set.name:''}`;try{if(navigator.share){await navigator.share({text:t});return}}catch(e){if(e&&e.name==='AbortError')return}try{await navigator.clipboard.writeText(t);toast('Copiado. Pégalo en WhatsApp.')}catch(e){}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank','noopener')};
+    const hs=songs.filter(x=>hist[x.id]&&hist[x.id].length);const recent=id=>hist[id].filter(d=>daysAgo(d)<=90).length;
+    const top=[...hs].sort((a,b)=>recent(b.id)-recent(a.id)).filter(x=>recent(x.id)).slice(0,8);const old=songs.filter(x=>!hist[x.id]||daysAgo(hist[x.id].at(-1))>60).sort((a,b)=>a.title.localeCompare(b.title,'es'));
+    $('#histBox').innerHTML=(top.length?`<p class="hint" style="margin:4px 0"><b>Más cantadas (últimos 3 meses)</b></p>`+top.map(x=>`<div class="item" data-hs="${esc(x.id)}"><span class="t">${esc(x.title)}<br><small>${recent(x.id)} ${recent(x.id)===1?'vez':'veces'} · última ${agoTxt(hist[x.id].at(-1))}</small></span></div>`).join(''):'<p class="hint">Aún no hay historial. Se llena al proyectar alabanzas.</p>')+(old.length&&hs.length?`<details><summary class="hint" style="cursor:pointer"><b>Sin cantar hace más de 2 meses (${old.length})</b></summary>${old.map(x=>`<div class="item" data-hs="${esc(x.id)}"><span class="t">${esc(x.title)}<br><small>${hist[x.id]?'Última '+agoTxt(hist[x.id].at(-1)):'Nunca'}</small></span></div>`).join('')}</details>`:'');
+    $('#histBox').onclick=e=>{const it=e.target.closest('[data-hs]');if(it)show(fromSource({t:'song',id:it.dataset.hs}))};
     $('#freeGo').onclick=()=>{const t=$('#freeTxt').value.trim();if(!t)return;show({kind:'ann',title:'Texto libre',slides:songSlides(t)},0)};
   }
 }
@@ -1113,6 +1152,59 @@ $('#dlgEdit').addEventListener('close',()=>{serms=serms.filter(x=>x.id!=='__tmp'
 $('#fEdit').addEventListener('submit',e=>{if(e.submitter&&e.submitter.value!=='ok')return;serms=serms.filter(x=>x.id!=='__tmp');const arr=EDK[editing.kind][0]();const t=$('#fTitle').value.trim();if(!t)return;
   const text=$('#fText').value,author=$('#fAuthor').value.trim();let s=editing.id&&arr.find(x=>x.id===editing.id);if(s){s.title=t;s.text=text;if(editing.kind==='songs')s.author=author}else{s={id:uid(),title:t,text};if(editing.kind==='songs')s.author=author;arr.push(s)}persist();drawLib();toast('Guardado');
   if(cur&&cur.src&&cur.src.id===s.id)reshow()});
+
+// ---------- Imprimir y compartir el culto ----------
+const fmtDate=d=>{if(!d)return '';const x=new Date(d+'T12:00');return x.toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long',year:'numeric'})};
+function printPlan(){
+  const P=planObj();if(!plan.length){toast('El culto está vacío');return}
+  let w=null;try{w=window.open('','smartchurch_imprimir','width=900,height=900')}catch(e){}
+  if(!w){toast('Tu navegador no permitió abrir otra ventana. Permite las ventanas emergentes para este sitio.');return}
+  const body=plan.map((src,i)=>{const it=fromSource(src);if(!it)return '';let h=`<li><div class="it"><b>${esc(it.title)}</b> <small>${KIND[src.t]||''}</small></div>`;
+    if(src.t==='song'){const sg=songs.find(x=>x.id===src.id);const tp=trans[src.id]||0;if(sg){if(sg.author)h+=`<div class="au">${esc(sg.author)}${tp?` · Tono ${tp>0?'+':''}${tp}`:''}</div>`;
+      h+='<div class="ly">'+sg.text.replace(/\r/g,'').split(/\n\s*\n/).map(b=>{const ls=b.split('\n');let lb='';const rest=ls.filter(l=>{const m=l.trim().match(/^\[(.+)\]$/);if(m&&!isChordLine(l)){lb=m[1];return false}return true});return `<div class="blq">${lb?`<div class="lb">${esc(lb)}</div>`:''}${chordHTML(rest.join('\n'),tp)}</div>`}).join('')+'</div>'}}
+    else if(src.t==='serm'){const sm=serms.find(x=>x.id===src.id);if(sm){const pts=sm.text.split('\n').filter(l=>/^#/.test(l)).map(l=>l.replace(/^#+\s*/,''));const refs=sm.text.split(/\n\s*\n/).map(x=>x.trim()).filter(x=>parseRef(x));if(pts.length||refs.length)h+=`<div class="ly"><div class="blq">${pts.map(x=>`<span class="cl">• ${esc(x)}</span>`).join('')}${refs.length?`<span class="cl ref">Citas: ${esc(refs.join(' · '))}</span>`:''}</div></div>`}}
+    return h+'</li>'}).join('');
+  const d=w.document;d.open();d.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(P.name)} · ${esc(P.date||'')}</title><style>
+body{font-family:"Segoe UI",system-ui,sans-serif;margin:0;color:#111;background:#fff}.bar{position:sticky;top:0;background:#1d3d7a;color:#fff;display:flex;gap:16px;align-items:center;padding:10px 20px;font-size:15px}.bar button{font:inherit;padding:6px 16px;border-radius:6px;border:0;background:#ffd77a;font-weight:700;cursor:pointer}
+main{max-width:800px;margin:0 auto;padding:24px 32px}h1{margin:0;font-size:26px;color:#1d3d7a}h2{margin:4px 0 18px;font-size:17px;font-weight:500;color:#444}
+ol{padding-left:22px}li{margin:0 0 16px;break-inside:avoid-page}.it{font-size:17px}.it small{color:#777;font-size:13px;margin-left:6px}.au{color:#666;font-size:13px}
+.ly{margin-top:6px;font-size:14.5px;line-height:1.35;columns:2;column-gap:28px}.blq{break-inside:avoid;margin-bottom:10px}.lb{font-weight:700;color:#1d3d7a;font-size:12.5px;text-transform:uppercase}
+.cl{display:block;white-space:pre-wrap}.cs{display:inline-flex;flex-direction:column;vertical-align:bottom;white-space:pre}.cs i{font-style:normal;font-weight:700;color:#b3261e;font-size:.85em;min-height:1.1em;line-height:1.1}.co{display:block;font-weight:700;color:#b3261e;white-space:pre;font-size:.9em}.ref{color:#555}
+body.noly .ly{display:none}body.noac .cs i,body.noac .co{display:none}body.noac .cs i{min-height:0}
+@media print{.bar{display:none}main{padding:0}}</style></head><body><div class="bar"><label><input type="checkbox" id="cLy" checked> Letras</label><label><input type="checkbox" id="cAc" checked> Acordes</label><span style="flex:1"></span><button id="bPr">Imprimir o guardar PDF</button></div>
+<main><h1>${esc(set.name||'Orden del culto')}</h1><h2>${esc(P.name)}${P.date?' · '+esc(fmtDate(P.date)):''}</h2><ol>${body}</ol></main></body></html>`);d.close();
+  d.getElementById('cLy').onchange=e=>d.body.classList.toggle('noly',!e.target.checked);d.getElementById('cAc').onchange=e=>d.body.classList.toggle('noac',!e.target.checked);d.getElementById('bPr').onclick=()=>w.print();
+}
+async function sharePlan(){
+  const P=planObj();if(!plan.length){toast('El culto está vacío');return}
+  const t=`*${set.name?set.name+' · ':''}${P.name}*${P.date?'\n'+fmtDate(P.date):''}\n\n`+plan.map((src,i)=>{const it=fromSource(src);if(!it)return '';const tp=src.t==='song'?(trans[src.id]||0):0;return `${i+1}. ${it.title}${src.t==='song'?'':' ('+(KIND[src.t]||'')+')'}${tp?` [tono ${tp>0?'+':''}${tp}]`:''}`}).filter(Boolean).join('\n');
+  try{if(navigator.share){await navigator.share({title:P.name,text:t});return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{await navigator.clipboard.writeText(t);toast('Orden del culto copiado. Pégalo en WhatsApp.')}catch(e){}
+  window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank','noopener');
+}
+
+// ---------- Nombre en pantalla ----------
+function setLT(on){ltOn=on&&!!LT.name;clearTimeout(ltTimer);if(ltOn&&LT.auto)ltTimer=setTimeout(()=>{ltOn=false;render();drawToolsState()},12000);render();drawToolsState()}
+function drawToolsState(){const b=$('#ltGo');if(b){b.textContent=ltOn?'Quitar nombre':'Mostrar nombre';b.classList.toggle('on',ltOn)}}
+
+// ---------- Momento de ofrenda ----------
+const OFR=['2 Corintios 9:7','Malaquías 3:10','Lucas 6:38','Proverbios 3:9-10','Hechos 20:35','2 Corintios 9:6'];
+function refSlide(q){const r=parseRef(q);if(!r)return null;const all=bibleSlides(r.b,r.c,r.v1,r.v2);if(!all.length)return null;const v2=r.v2||r.v1;return{text:all.map(x=>x.text).join(' '),html:all.map(x=>x.html).join(' '),ref:`${BOOKS[r.b]} ${r.c}:${r.v1}${v2>r.v1?'-'+v2:''}`}}
+function startOffer(){
+  const info=$('#ofInfo').value.trim();save('sc_offer',info);
+  const sl=[{text:'Momento de ofrenda\nDemos con alegría al Señor',label:'Inicio'},...OFR.map(refSlide).filter(Boolean)];if(info)sl.push({text:info,label:'Datos para ofrendar'});
+  show({kind:'ann',title:'Momento de ofrenda',slides:sl},0);clearInterval(offerTimer);
+  if($('#ofAuto').checked)offerTimer=setInterval(()=>{if(!cur||cur.title!=='Momento de ofrenda'){clearInterval(offerTimer);return}if(!black)go((liveIdx+1)%cur.slides.length)},15000);
+  const m=$('#ofMus').value;stopOfferMusic();if(m){const it=mediaList.find(x=>x.id===m);if(it&&it.yt){offerMusic=document.createElement('iframe');offerMusic.className='yt-bg';offerMusic.allow='autoplay; encrypted-media';offerMusic.style.cssText='position:fixed;width:2px;height:2px;left:-10px;bottom:0;border:0;opacity:0';offerMusic.src=`https://www.youtube-nocookie.com/embed/${it.yt}?autoplay=1&rel=0&playsinline=1`;document.body.append(offerMusic);$('#ofStop').hidden=false}}
+  toast('Ofrenda en pantalla'+($('#ofAuto').checked?' · pasa sola cada 15 s':''));
+}
+function stopOfferMusic(){if(offerMusic){offerMusic.remove();offerMusic=null}const b=$('#ofStop');if(b)b.hidden=true}
+
+// ---------- Lectura bíblica del año ----------
+function readingFor(dateStr){if(!BIB)return null;const d=new Date(dateStr+'T12:00');const y0=new Date(d.getFullYear(),0,1,12);const day=Math.min(365,Math.round((d-y0)/864e5)+1);
+  const chs=[];BIB.forEach((bk,b)=>{for(let c=1;c<=bk.length;c++)chs.push([b,c])});const per=chs.length/365;const a=Math.floor((day-1)*per),z=day===365?chs.length-1:Math.floor(day*per)-1;
+  const list=chs.slice(a,Math.max(a,z)+1);const f=list[0],l=list[list.length-1];
+  const label=f[0]===l[0]?`${BOOKS[f[0]]} ${f[1]}${l[1]>f[1]?'–'+l[1]:''}`:`${BOOKS[f[0]]} ${f[1]} – ${BOOKS[l[0]]} ${l[1]}`;return{day,list,label}}
 
 // ---------- Peticiones y cumpleaños ----------
 function petAnn(id,title,head,raw,end){const names=raw.split('\n').map(x=>x.trim()).filter(Boolean);let i=anns.findIndex(a=>a.id===id);
@@ -1241,6 +1333,7 @@ function applyData(d){
   if(Array.isArray(d.plans)&&d.plans.length){plans=d.plans.filter(p=>p&&p.id&&Array.isArray(p.items)).map(p=>({id:String(p.id),name:String(p.name||'Culto'),date:String(p.date||''),items:p.items.filter(x=>x&&typeof x.t==='string')}));if(d.planId&&plans.find(p=>p.id===d.planId))planId=d.planId}
   else if(Array.isArray(d.plan)){planObj().items=d.plan.filter(x=>x&&typeof x.t==='string')}
   if(Array.isArray(d.yt))for(const m of d.yt)if(m&&m.id&&/^[\w-]{11}$/.test(m.yt||'')&&!mediaList.some(x=>x.id===m.id))mediaList.push({id:String(m.id),name:String(m.name||'Video'),type:'yt',yt:m.yt});
+  if(d.hist&&typeof d.hist==='object'&&!Array.isArray(d.hist)){hist=d.hist;save('sc_hist',hist)}
   if(!plans.find(p=>p.id===planId))planId=plans[0].id;plan=planObj().items;curPlan=-1;
   if(d.set&&typeof d.set==='object')for(const k of Object.keys(DEF))if(k!=='remoteId'&&k in d.set&&typeof d.set[k]===typeof DEF[k])set[k]=d.set[k];
   setVer++;
