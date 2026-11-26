@@ -394,6 +394,300 @@ const bverLoading={};
 function ensureVer(k){if(!k||bibleData(k))return Promise.resolve();if(!bverLoading[k])bverLoading[k]=loadScript(BVER[k].file).catch(()=>{delete bverLoading[k];toast('No se pudo cargar '+BVER[k].name+'. Revisa tu conexión.')});return bverLoading[k]}
 function verText(k,b,c,v){const d=bibleData(k);return d&&d[b]&&d[b][c-1]&&d[b][c-1][v-1]||''}
 
+const SERM_SUG=[
+['El amor de Dios',`# El amor de Dios
+No hay amor más grande que el que Dios nos ha mostrado.
+
+Juan 3:16
+
+# 1. Un amor que da
+Dios no solo dijo que nos ama: entregó a su Hijo.
+
+Romanos 5:8
+
+# 2. Un amor que nos buscó primero
+Él nos amó cuando todavía estábamos lejos de Él.
+
+1 Juan 4:9-10
+
+# 3. Un amor que nada puede separar
+Ninguna circunstancia puede apartarnos de su amor.
+
+Romanos 8:38-39
+
+# Conclusión
+Recibe hoy ese amor y compártelo con otros.`],
+['La fe que agrada a Dios',`# La fe que agrada a Dios
+Vivir confiando en lo que Dios ha dicho.
+
+Hebreos 11:1
+
+# 1. Sin fe es imposible agradar a Dios
+La fe es creer que Él existe y que recompensa a quien le busca.
+
+Hebreos 11:6
+
+# 2. La fe nace de la Palabra
+Mientras más escuchamos a Dios, más crece nuestra fe.
+
+Romanos 10:17
+
+# 3. La fe se demuestra con obras
+Una fe viva se nota en la manera en que vivimos.
+
+Santiago 2:17
+
+# Conclusión
+Da hoy un paso de fe en aquello que Dios te ha pedido.`],
+['El Buen Pastor',`# El Buen Pastor
+Jesús cuida de cada una de sus ovejas.
+
+Salmos 23:1-3
+
+# 1. El pastor que da su vida
+Jesús no es un asalariado: dio su vida por nosotros.
+
+Juan 10:11
+
+# 2. El pastor que conoce a sus ovejas
+Él conoce tu nombre, tu historia y tu necesidad.
+
+Juan 10:27-28
+
+# 3. El pastor que acompaña en el valle
+Aun en los momentos más oscuros, Él está contigo.
+
+Salmos 23:4-6
+
+# Conclusión
+Escucha su voz y síguelo; con Él nada te faltará.`],
+['El poder de la oración',`# El poder de la oración
+La oración es hablar con nuestro Padre.
+
+Mateo 6:6
+
+# 1. Ora en lugar de afanarte
+Lleva a Dios tus preocupaciones y recibe su paz.
+
+Filipenses 4:6-7
+
+# 2. Ora en todo tiempo
+La oración no es solo para las emergencias: es un estilo de vida.
+
+1 Tesalonicenses 5:17
+
+# 3. Oren unos por otros
+La oración del justo tiene gran poder.
+
+Santiago 5:16
+
+# Conclusión
+Hagamos de la oración nuestra primera respuesta, no la última.`],
+['El perdón',`# El perdón
+Perdonados para perdonar.
+
+# 1. Dios nos perdona
+Si confesamos, Él es fiel para perdonarnos y limpiarnos.
+
+1 Juan 1:9
+
+# 2. Perdonamos como fuimos perdonados
+El perdón que recibimos nos enseña a perdonar.
+
+Efesios 4:32
+
+Colosenses 3:13
+
+# 3. El perdón nos libera
+Guardar rencor nos ata; perdonar nos hace libres.
+
+Mateo 6:14-15
+
+# Conclusión
+¿A quién necesitas perdonar hoy? Pídele a Dios la fuerza para hacerlo.`],
+['Nueva vida en Cristo',`# Nueva vida en Cristo
+En Cristo todo es hecho nuevo.
+
+2 Corintios 5:17
+
+# 1. Salvos por gracia
+La salvación es un regalo de Dios, no el resultado de nuestro esfuerzo.
+
+Efesios 2:8-10
+
+# 2. Caminamos en vida nueva
+Así como Cristo resucitó, nosotros vivimos una vida nueva.
+
+Romanos 6:4
+
+# 3. Cristo vive en mí
+La vida cristiana es dejar que Cristo viva a través de nosotros.
+
+Gálatas 2:20
+
+# Conclusión
+Deja atrás lo viejo y camina hoy en la vida nueva que Dios te da.`],
+['Esperanza en medio de la prueba',`# Esperanza en medio de la prueba
+Dios obra aun en los momentos difíciles.
+
+Romanos 8:28
+
+# 1. La prueba produce paciencia
+Dios usa las dificultades para hacernos madurar.
+
+Santiago 1:2-4
+
+# 2. No temas, Dios está contigo
+Él promete sostenerte con su mano.
+
+Isaías 41:10
+
+# 3. Mira lo eterno
+Las pruebas son pasajeras; la gloria que viene es eterna.
+
+2 Corintios 4:17-18
+
+# Conclusión
+Tu prueba no es el final de la historia: Dios sigue escribiendo.`],
+['El fruto del Espíritu',`# El fruto del Espíritu
+Una vida que refleja el carácter de Cristo.
+
+Gálatas 5:22-23
+
+# 1. El fruto viene de estar unidos a Cristo
+Separados de Él nada podemos hacer.
+
+Juan 15:5
+
+# 2. El fruto glorifica al Padre
+Cuando damos fruto, otros ven a Dios en nosotros.
+
+Juan 15:8
+
+# Conclusión
+Pidamos al Espíritu Santo que forme su carácter en nosotros cada día.`],
+['La familia según Dios',`# La familia según Dios
+Dios diseñó la familia y quiere bendecirla.
+
+Josué 24:15
+
+# 1. Amor que se entrega
+El amor en el matrimonio se parece al amor de Cristo por su iglesia.
+
+Efesios 5:25
+
+# 2. Honra y enseñanza
+Hijos que honran, padres que enseñan con paciencia.
+
+Efesios 6:1-4
+
+# 3. La fe se enseña en casa
+La Palabra de Dios debe estar presente en nuestra vida diaria.
+
+Deuteronomio 6:6-7
+
+# Conclusión
+Decidamos hoy: yo y mi casa serviremos a Jehová.`],
+['La gran comisión',`# La gran comisión
+Jesús nos envía a compartir las buenas nuevas.
+
+Mateo 28:18-20
+
+# 1. Con su autoridad
+No vamos solos: Él tiene toda autoridad y está con nosotros.
+
+# 2. Con el poder del Espíritu
+El Espíritu Santo nos capacita para ser testigos.
+
+Hechos 1:8
+
+# 3. Alguien tiene que ir
+¿Cómo creerán si nadie les habla?
+
+Romanos 10:14-15
+
+# Conclusión
+Piensa en una persona con quien compartirás a Cristo esta semana.`],
+['Un corazón agradecido',`# Un corazón agradecido
+Dar gracias es la voluntad de Dios para nosotros.
+
+1 Tesalonicenses 5:18
+
+# 1. Entremos con acción de gracias
+La gratitud nos lleva a la presencia de Dios.
+
+Salmos 100:4-5
+
+# 2. Todo para su gloria
+Lo que hacemos, hagámoslo dando gracias a Dios.
+
+Colosenses 3:17
+
+# Conclusión
+Hoy, cuenta tus bendiciones y dale gracias a Dios por cada una.`],
+['El valor de la Palabra de Dios',`# El valor de la Palabra de Dios
+La Biblia es luz para nuestro camino.
+
+Salmos 119:105
+
+# 1. Inspirada por Dios
+Toda la Escritura es útil para enseñarnos y prepararnos.
+
+2 Timoteo 3:16-17
+
+# 2. Viva y eficaz
+La Palabra llega a lo más profundo del corazón.
+
+Hebreos 4:12
+
+# 3. Meditar y obedecer
+La bendición está en hacer lo que la Palabra dice.
+
+Josué 1:8
+
+# Conclusión
+Hagamos de la lectura de la Biblia un hábito diario.`],
+['El nacimiento de Jesús',`# El nacimiento de Jesús
+Dios se hizo hombre para salvarnos.
+
+Isaías 9:6
+
+# 1. Buenas nuevas de gran gozo
+El nacimiento de Jesús es una noticia para todo el pueblo.
+
+Lucas 2:10-11
+
+# 2. Él salvará a su pueblo
+Su nombre revela su misión: salvarnos de nuestros pecados.
+
+Mateo 1:21
+
+# 3. Dios con nosotros
+El Verbo se hizo carne y habitó entre nosotros.
+
+Juan 1:14
+
+# Conclusión
+El mejor regalo de Navidad es recibir a Jesús en el corazón.`],
+['La resurrección de Cristo',`# La resurrección de Cristo
+¡No está aquí, ha resucitado!
+
+Mateo 28:6
+
+# 1. El corazón del evangelio
+Cristo murió, fue sepultado y resucitó al tercer día.
+
+1 Corintios 15:3-4
+
+# 2. Esperanza de vida eterna
+Quien cree en Él, aunque muera, vivirá.
+
+Juan 11:25-26
+
+# Conclusión
+Servimos a un Salvador vivo. ¡Esa es nuestra esperanza!`]
+];
+
 // ---------- Medios ----------
 const YT_SUG=[['Ut7KM8-eGik','Tu Fidelidad','Israel & New Breed, Marcos Witt'],['SNHtwDiRI50','Renuévame (En Vivo)','Marcos Witt'],['Lt2ChbsgXhk','Eres Rey de los Cielos / Dios Incomparable','Marco Barrientos'],['RJ-IMhpLZTY','Milagroso, Abres Camino / Aquí Estás','Su Presencia'],['v6iVgL_rwuU','Abre Mis Ojos Oh Cristo','Su Presencia'],['3uUJCvdbH3k','Como Dijiste','Christine D\'Clario'],['qhl4FGcl_Mo','Nadie Como Tú','Miel San Marcos & Barak']];
 const ytId=u=>{u=String(u||'').trim();const m=u.match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/);return m?m[1]:(/^[\w-]{11}$/.test(u)?u:'')};
@@ -635,12 +929,14 @@ function drawLib(){
     const T={songs:['song',songs,'alabanza','alabanzas','por título o letra'],ann:['ann',anns,'diapositiva de anuncio','anuncios','anuncio'],serm:['serm',serms,'predicación','predicaciones','predicación']}[tab];
     const [t,arr,one,many,ph]=T;const q=norm(songQ);
     const list=arr.filter(s=>!q||norm(s.title+' '+s.text+' '+(s.author||'')).includes(q)).sort((a,b)=>a.title.localeCompare(b.title,'es'));
-    L.innerHTML=`<div class="row"><input id="q" type="search" placeholder="Buscar ${ph}" value="${esc(songQ)}"></div><div class="row"><button class="pri" id="newBtn">+ Nueva ${one}</button>${tab==='songs'?'<button id="bulkBtn">Importar varias</button>':''}</div>${tab==='serm'?'<p class="hint">Escribe tus puntos. Un párrafo que sea solo una cita (ej. <b>Juan 3:16-18</b>) se proyecta con el texto bíblico. Una línea que empieza con # es un título.</p>':''}<p class="hint">${arr.length} ${many}${q?` · ${list.length} encontradas`:''}</p>`+(list.length?list.map(s=>`<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="t">${esc(s.title)}${s.author?`<br><small>${esc(s.author)}</small>`:''}</span><button class="x" data-add="${esc(s.id)}" title="Agregar al culto">+ Culto</button><button class="x" data-ed="${esc(s.id)}">Editar</button></div>`).join(''):`<div class="empty">No hay resultados.</div>`);
+    L.innerHTML=`<div class="row"><input id="q" type="search" placeholder="Buscar ${ph}" value="${esc(songQ)}"></div><div class="row"><button class="pri" id="newBtn">+ Nueva ${one}</button>${tab==='songs'?'<button id="bulkBtn">Importar varias</button>':''}</div>${tab==='serm'?'<p class="hint">Escribe tus puntos. Un párrafo que sea solo una cita (ej. <b>Juan 3:16-18</b>) se proyecta con el texto bíblico. Una línea que empieza con # es un título.</p>':''}<p class="hint">${arr.length} ${many}${q?` · ${list.length} encontradas`:''}</p>`+(tab==='serm'?(()=>{const sg=SERM_SUG.filter(([t])=>!serms.some(x=>x.title===t));return sg.length?`<details${serms.length<3?' open':''}><summary style="cursor:pointer;font-weight:600;margin:6px 0">Bosquejos sugeridos (${sg.length})</summary>${sg.map(([t,tx])=>`<div class="item"><span class="t">${esc(t)}<br><small>${(tx.match(/^[^#\n].{0,38}\d+:\d+(-\d+)?$/gm)||[]).slice(0,3).map(esc).join(' · ')}</small></span><button class="x" data-ssug="${esc(t)}">+ Agregar</button></div>`).join('')}<div class="row" style="margin-top:6px"><button id="ssugAll">Agregar todos</button></div></details><h4>Mis predicaciones</h4>`:''})():'')+(list.length?list.map(s=>`<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="t">${esc(s.title)}${s.author?`<br><small>${esc(s.author)}</small>`:''}</span><button class="x" data-add="${esc(s.id)}" title="Agregar al culto">+ Culto</button><button class="x" data-ed="${esc(s.id)}">Editar</button></div>`).join(''):`<div class="empty">No hay resultados.</div>`);
     const qi=$('#q');qi.oninput=()=>{songQ=qi.value;const p=qi.selectionStart;drawLib();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
     $('#newBtn').onclick=()=>edit(tab,null);
+    const ssa=$('#ssugAll');if(ssa)ssa.onclick=()=>{let n=0;for(const[t,tx]of SERM_SUG)if(!serms.some(x=>x.title===t)){serms.push({id:uid(),title:t,text:tx});n++}persist();drawLib();toast(n+' bosquejos agregados')};
     if(tab==='songs')$('#bulkBtn').onclick=()=>{$('#bulkMsg').textContent='';$('#dlgBulk').showModal()};
     L.onclick=e=>{const d=e.target.dataset;
       if(d.ed){edit(tab,d.ed);return}
+      if(d.ssug){const x=SERM_SUG.find(y=>y[0]===d.ssug);if(x&&!serms.some(z=>z.title===x[0])){const n={id:uid(),title:x[0],text:x[1]};serms.push(n);persist();drawLib();show(fromSource({t:'serm',id:n.id}));toast('Bosquejo agregado')}return}
       if(d.add){plan.push({t,id:d.add});persist();toast('Agregado a: '+planObj().name);return}
       const it=e.target.closest('.item');if(it&&it.dataset.id){show(fromSource({t,id:it.dataset.id}));L.querySelectorAll('.item').forEach(n=>n.classList.toggle('sel',n===it))}};
   }else if(tab==='bible'){
