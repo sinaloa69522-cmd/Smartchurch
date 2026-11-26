@@ -18,12 +18,15 @@ App web para proyectar alabanzas, textos bíblicos y anuncios durante el culto. 
 
 ## Funciones
 
-- **Alabanzas:** cada estrofa (separada por una línea en blanco) es una diapositiva. Una línea como `[Coro]` sirve de etiqueta y no se proyecta.
-- **Biblia Reina-Valera 1909** completa (dominio público): escribe `Juan 3:16`, `Sal 23` o `Ro 8:28-39`, o busca por palabra.
-- **Anuncios** y **orden del culto**.
-- Pantalla negra (`B`), ocultar texto (`C`), avanzar con `→` / espacio, retroceder con `←`.
-- Fondos predefinidos o una imagen propia, y tamaño de letra ajustable.
-- Respaldo e importación de alabanzas (archivos `.json` o `.txt`).
+- **Orden del culto:** arma la lista (alabanzas, pasajes, anuncios), reordénala y pulsa **▶ Empezar**. Al terminar un elemento, → pasa solo al siguiente.
+- **Alabanzas:** cada estrofa (separada por una línea en blanco) es una diapositiva; `[Coro]` sirve de etiqueta. Búsqueda por título o letra, autor, e **Importar varias** (pegar con `---` entre alabanzas o archivos `.txt`).
+- **Biblia Reina-Valera 1909** completa: `Juan 3:16`, `Sal 23`, `Ro 8:28-39`, búsqueda por palabra y de 1 a 4 versículos por diapositiva.
+- **Extras:** cuenta regresiva antes del culto, pantalla de logo de la iglesia y texto libre al momento.
+- **Mensaje rápido** en una franja sobre lo que se proyecta (avisos a padres, etc.).
+- **Ajustes:** fondos (incluye imagen propia y verde croma), oscurecer fondo, tamaño y tipo de letra, texto al centro o abajo para transmisión en vivo, mayúsculas, transición suave.
+- **Proyector:** se abre en la segunda pantalla cuando el navegador lo permite; doble clic para pantalla completa. Indicador de conexión y reloj.
+- Atajos: `→`/espacio siguiente, `←` anterior, `1`–`9` ir a diapositiva, `B` negro, `C` ocultar texto, `L` logo, `M` mensaje, `P` proyector.
+- **Respaldo** de todo (incluye ajustes) para pasarlo a otra computadora.
 
 Los datos (alabanzas, anuncios, orden del culto) se guardan en el navegador de la computadora donde se usa. Haz respaldos con el botón **Respaldo**.
 

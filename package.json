@@ -1,7 +1,7 @@
 {
   "name": "smartchurch",
   "productName": "SmartChurch",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Proyección de alabanzas, textos bíblicos y anuncios para la iglesia",
   "main": "electron/main.js",
   "private": true,
