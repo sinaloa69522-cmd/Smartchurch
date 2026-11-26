@@ -4,6 +4,7 @@ on:
   pull_request:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ['v*']
 
 permissions:
@@ -23,8 +24,16 @@ jobs:
         with:
           name: SmartChurch-Windows
           path: dist/*.exe
-      - name: Attach installer to the release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "v=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Publish installer as a release
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || steps.ver.outputs.v }}
+          name: SmartChurch ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || steps.ver.outputs.v }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
           files: dist/*.exe

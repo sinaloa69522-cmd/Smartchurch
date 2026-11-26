@@ -6,7 +6,7 @@ App web para proyectar alabanzas, textos bíblicos y anuncios durante el culto. 
 
 - **Windows:** descarga el instalador [SmartChurch-Setup.exe](https://github.com/sinaloa69522-cmd/Smartchurch/releases/latest/download/SmartChurch-Setup.exe), ábrelo y sigue los pasos. Queda el ícono en el escritorio y en el menú Inicio. Si hay un proyector conectado, la ventana del proyector se abre sola en esa pantalla y en pantalla completa.
 - Dentro de la app, el botón verde **⬇ Descargar app** ofrece el instalador, la instalación desde el navegador (Chrome/Edge) o un solo archivo `SmartChurch.html` con todo incluido.
-- Cada etiqueta `v*` (por ejemplo `v1.0.1`) genera el instalador con GitHub Actions (workflow *Desktop app (Windows)*) y lo adjunta al *release*.
+- Cada cambio en `main` (y cada etiqueta `v*`) genera el instalador con GitHub Actions (workflow *Desktop app (Windows)*) y lo publica en *Releases* con la versión de `package.json`.
 - Para probar en tu PC con Node instalado: `npm install` y luego `npm start`.
 
 ## Usarla sin instalar
